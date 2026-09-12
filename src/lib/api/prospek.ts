@@ -1,13 +1,15 @@
 // ============================================================
 // SIAP ALSINTAN — API Service: Prospek
 // ============================================================
+// Sumber data: sheet DATA_PROSPEK di Google Spreadsheet (via Apps Script)
+// ============================================================
 
-import { API_CONFIG } from '@/lib/config/app-config'
 import type { DataProspek, ProspekFilter, PaginatedResponse, CreateProspekForm } from '@/lib/types'
 import { MOCK_PROSPEK } from '@/lib/mock/mock-data'
 import { PAGINATION } from '@/lib/config/app-config'
+import { gasGet, gasPost, isGasConfigured } from './gas'
 
-const USE_MOCK = !API_CONFIG.gasApiUrl || API_CONFIG.gasApiUrl.includes('PLACEHOLDER')
+const USE_MOCK = !isGasConfigured
 
 export async function getProspek(filter?: ProspekFilter): Promise<PaginatedResponse<DataProspek>> {
   if (USE_MOCK) {
@@ -34,8 +36,18 @@ export async function getProspek(filter?: ProspekFilter): Promise<PaginatedRespo
 
     return { items, total, page, limit, totalPages: Math.ceil(total / limit) }
   }
-  // TODO: GAS call
-  throw new Error('GAS API belum dikonfigurasi')
+
+  return gasGet<PaginatedResponse<DataProspek>>('getProspek', {
+    status: filter?.status,
+    idAO: filter?.idAO,
+    kecamatan: filter?.kecamatan,
+    komoditas: filter?.komoditas,
+    dateFrom: filter?.dateFrom,
+    dateTo: filter?.dateTo,
+    search: filter?.search,
+    page: filter?.page,
+    limit: filter?.limit,
+  })
 }
 
 export async function getProspekById(idProspek: string): Promise<DataProspek | null> {
@@ -43,7 +55,7 @@ export async function getProspekById(idProspek: string): Promise<DataProspek | n
     await new Promise((r) => setTimeout(r, 300))
     return MOCK_PROSPEK.find((p) => p.idProspek === idProspek) ?? null
   }
-  throw new Error('GAS API belum dikonfigurasi')
+  return gasGet<DataProspek | null>('getProspek', { idProspek })
 }
 
 export async function createProspek(form: CreateProspekForm): Promise<DataProspek> {
@@ -60,5 +72,5 @@ export async function createProspek(form: CreateProspekForm): Promise<DataProspe
     }
     return newProspek
   }
-  throw new Error('GAS API belum dikonfigurasi')
+  return gasPost<DataProspek>('createProspek', { ...form })
 }

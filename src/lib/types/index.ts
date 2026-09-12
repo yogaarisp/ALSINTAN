@@ -263,6 +263,36 @@ export interface MapMarker {
 }
 
 // ─────────────────────────────────────────
+// SUMBER DATA (spreadsheet sumber lain)
+// ─────────────────────────────────────────
+export interface SourceTab {
+  nama: string
+  baris: number
+  kolom: number
+}
+
+export interface SourceInfo {
+  key: string
+  nama: string
+  kategori: string
+  url: string
+  status: string
+  tabs: SourceTab[]
+}
+
+export interface SourceData {
+  sumber: { key: string; nama: string }
+  tab: string
+  header: string[]
+  rows: Array<Array<string | number | boolean | null>>
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+  updatedAt: string
+}
+
+// ─────────────────────────────────────────
 // FORM TYPES
 // ─────────────────────────────────────────
 export interface CreateProspekForm {

@@ -88,3 +88,30 @@ Base URL: `VITE_GAS_API_URL` (Contoh: `https://script.google.com/macros/s/{DEPLO
   "catatan": "Verifikasi luas sawah akurat"
 }
 ```
+
+---
+
+## 5. Sumber Data (Spreadsheet Sumber Lain — Read-only)
+- **Method**: `GET`
+- **Action**: `getSources`
+- **Response**: daftar spreadsheet sumber (Poktan, Produksi, Rekap) + daftar tab (`nama`, `baris`, `kolom`) + `url` + `status`
+- **Method**: `GET`
+- **Action**: `getSourceData`
+- **Query Params**: `key` (mis. `poktan`), `tab` (nama tab), `q` (pencarian opsional), `page`, `limit` (default 200, max 2000)
+- **Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "sumber": { "key": "poktan", "nama": "Poktan 2026" },
+    "tab": "Ngombol",
+    "header": ["NO", "NAMA GAPOKTAN", "..."],
+    "rows": [["1", "Gapoktan X", "..."]],
+    "total": 240,
+    "page": 1,
+    "limit": 200,
+    "totalPages": 2,
+    "updatedAt": "2026-09-12T12:00:00.000Z"
+  }
+}
+```

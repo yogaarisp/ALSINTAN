@@ -7,6 +7,7 @@ import {
   ClipboardList,
   FileText,
   Activity,
+  Database,
   Settings,
   LogOut,
   ChevronRight,
@@ -32,6 +33,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/survey', icon: FileText, label: 'Survey', roles: ['ADMIN', 'AO'] },
   { to: '/ao', icon: Users, label: 'AO', roles: ['ADMIN', 'MANAJEMEN'] },
   { to: '/monitoring', icon: Activity, label: 'Monitoring', roles: ['ADMIN', 'MANAJEMEN'] },
+  { to: '/sumber-data', icon: Database, label: 'Sumber Data' },
 ]
 
 interface SidebarProps {

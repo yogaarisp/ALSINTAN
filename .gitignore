@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Google service account keys (NEVER commit)
+secrets/
+
+# Sumber data asli (arsip lokal; versi kerja ada di Google Drive)
+excel/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

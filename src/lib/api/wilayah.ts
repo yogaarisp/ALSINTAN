@@ -1,23 +1,18 @@
 // ============================================================
 // SIAP ALSINTAN — API Service: Wilayah
 // ============================================================
-// Abstraction layer antara UI dan data source (GAS / Mock)
-// Ganti implementasi di sini tanpa mengubah komponen UI
+// Sumber data: MASTER_WILAYAH di Google Spreadsheet (via Apps Script)
+// Fallback ke mock data hanya saat VITE_GAS_API_URL belum diset
 // ============================================================
 
-import { API_CONFIG } from '@/lib/config/app-config'
 import type { MasterWilayah, WilayahFilter } from '@/lib/types'
 import { MOCK_WILAYAH } from '@/lib/mock/mock-data'
+import { gasGet, isGasConfigured } from './gas'
 
-const USE_MOCK = !API_CONFIG.gasApiUrl || API_CONFIG.gasApiUrl.includes('PLACEHOLDER')
+const USE_MOCK = !isGasConfigured
 
-/**
- * Ambil semua data wilayah
- * TODO: Implementasikan call ke GAS setelah NC2 & NC3 terkonfirmasi
- */
 export async function getWilayah(filter?: WilayahFilter): Promise<MasterWilayah[]> {
   if (USE_MOCK) {
-    // Simulasi delay network
     await new Promise((r) => setTimeout(r, 500))
     let data = [...MOCK_WILAYAH]
     if (filter?.kabupaten) {
@@ -29,20 +24,21 @@ export async function getWilayah(filter?: WilayahFilter): Promise<MasterWilayah[
     return data
   }
 
-  // TODO: Implementasi GAS call
-  // const res = await apiClient.get<MasterWilayah[]>('', { action: 'getWilayah', ...filter })
-  // return res.data
-  throw new Error('GAS API belum dikonfigurasi. Set VITE_GAS_API_URL di .env.local')
+  let data = await gasGet<MasterWilayah[]>('getWilayah', {
+    kabupaten: filter?.kabupaten,
+    kecamatan: filter?.kecamatan,
+    komoditas: filter?.komoditas,
+  })
+  if (filter?.priorityLevel) {
+    data = data.filter((w) => w.priorityLevel === filter.priorityLevel)
+  }
+  return data
 }
 
-/**
- * Ambil detail satu wilayah berdasarkan ID
- */
 export async function getWilayahById(idKecamatan: string): Promise<MasterWilayah | null> {
   if (USE_MOCK) {
     await new Promise((r) => setTimeout(r, 300))
     return MOCK_WILAYAH.find((w) => w.idKecamatan === idKecamatan) ?? null
   }
-  // TODO: GAS call
-  throw new Error('GAS API belum dikonfigurasi')
+  return gasGet<MasterWilayah | null>('getWilayah', { idKecamatan })
 }

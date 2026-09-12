@@ -9,6 +9,7 @@ import ProspekPage from '@/pages/prospek/ProspekPage'
 import AOPage from '@/pages/ao/AOPage'
 import SurveyPage from '@/pages/survey/SurveyPage'
 import MonitoringPage from '@/pages/monitoring/MonitoringPage'
+import SumberDataPage from '@/pages/sumber-data/SumberDataPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -73,6 +74,7 @@ export default function App() {
           <Route path="ao" element={<AOPage />} />
           <Route path="survey" element={<SurveyPage />} />
           <Route path="monitoring" element={<MonitoringPage />} />
+          <Route path="sumber-data" element={<SumberDataPage />} />
         </Route>
 
         {/* 404 */}

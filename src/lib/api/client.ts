@@ -72,7 +72,11 @@ class ApiClient {
   }
 
   async post<T>(path: string, data: unknown, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.client.post<ApiResponse<T>>(path, data, config)
+    // GAS: kirim sebagai text/plain supaya browser tidak melakukan CORS preflight
+    const response = await this.client.post<ApiResponse<T>>(path, data, {
+      ...config,
+      headers: { 'Content-Type': 'text/plain;charset=utf-8', ...(config?.headers ?? {}) },
+    })
     return response.data
   }
 

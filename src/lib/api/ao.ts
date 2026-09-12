@@ -1,19 +1,21 @@
 // ============================================================
-// SIAP ALSINTAN — API Service: AO
+// SIAP ALSINTAN — API Service: AO (Account Officer)
+// ============================================================
+// Sumber data: sheet MASTER_AO di Google Spreadsheet (via Apps Script)
 // ============================================================
 
-import { API_CONFIG } from '@/lib/config/app-config'
 import type { MasterAO } from '@/lib/types'
 import { MOCK_AO } from '@/lib/mock/mock-data'
+import { gasGet, gasPost, isGasConfigured } from './gas'
 
-const USE_MOCK = !API_CONFIG.gasApiUrl || API_CONFIG.gasApiUrl.includes('PLACEHOLDER')
+const USE_MOCK = !isGasConfigured
 
 export async function getAO(): Promise<MasterAO[]> {
   if (USE_MOCK) {
     await new Promise((r) => setTimeout(r, 400))
     return [...MOCK_AO]
   }
-  throw new Error('GAS API belum dikonfigurasi')
+  return gasGet<MasterAO[]>('getAO')
 }
 
 export async function getAOById(idAO: string): Promise<MasterAO | null> {
@@ -21,7 +23,8 @@ export async function getAOById(idAO: string): Promise<MasterAO | null> {
     await new Promise((r) => setTimeout(r, 300))
     return MOCK_AO.find((a) => a.idAO === idAO) ?? null
   }
-  throw new Error('GAS API belum dikonfigurasi')
+  const all = await getAO()
+  return all.find((a) => a.idAO === idAO) ?? null
 }
 
 export interface CreateAOForm {
@@ -46,7 +49,7 @@ export async function createAO(form: CreateAOForm): Promise<MasterAO> {
     MOCK_AO.push(newAO)
     return newAO
   }
-  throw new Error('GAS API belum dikonfigurasi')
+  return gasPost<MasterAO>('createAO', { ...form })
 }
 
 export async function updateAOStatus(idAO: string, status: 'AKTIF' | 'TIDAK_AKTIF'): Promise<MasterAO> {
@@ -57,6 +60,5 @@ export async function updateAOStatus(idAO: string, status: 'AKTIF' | 'TIDAK_AKTI
     ao.status = status
     return { ...ao }
   }
-  throw new Error('GAS API belum dikonfigurasi')
+  return gasPost<MasterAO>('updateAOStatus', { idAO, status })
 }
-
