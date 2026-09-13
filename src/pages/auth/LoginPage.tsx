@@ -1,11 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Eye, EyeOff, Sprout, LogIn, AlertCircle, Shield, User, BarChart3, Zap } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { Eye, EyeOff, Sprout, LogIn, AlertCircle, Shield, User as UserIcon, BarChart3, Zap } from 'lucide-react'
 import { useAuth } from '@/lib/auth/auth-context'
-import type { LoginForm } from '@/lib/types'
+import { GOOGLE_CONFIG } from '@/lib/config/app-config'
+import { gasPost } from '@/lib/api/gas'
+import type { LoginForm, UserRole, User } from '@/lib/types'
 
 const loginSchema = z.object({
   email: z.string().email('Email tidak valid').min(1, 'Email harus diisi'),
@@ -30,7 +33,7 @@ const SHORTCUT_ACCOUNTS = [
     desc: 'Target wilayah, prospek & survey lapangan',
     email: 'budi@siap-alsintan.id',
     password: 'ao123',
-    icon: User,
+    icon: UserIcon,
     badgeBg: '#dcfce7',
     badgeColor: '#15803d',
     borderHover: '#4ade80',
@@ -49,17 +52,90 @@ const SHORTCUT_ACCOUNTS = [
 ]
 
 export default function LoginPage() {
-  const { login, isAuthenticated } = useAuth()
+  const { login, loginWithUser, isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
   const [loadingRole, setLoadingRole] = useState<string | null>(null)
+  const [googleLoading, setGoogleLoading] = useState(false)
+  const googleBtnRef = useRef<HTMLDivElement>(null)
 
   // Redirect jika sudah login
   if (isAuthenticated) {
     navigate('/dashboard', { replace: true })
     return null
   }
+
+  // ── Google Sign-In (aktif jika VITE_GOOGLE_CLIENT_ID diset) ──
+  const handleGoogleCredential = async (credential: string) => {
+    setGoogleLoading(true)
+    setAuthError(null)
+    try {
+      // Decode payload JWT (hanya baca email & nama; verifikasi email terdaftar via sheet USERS)
+      const payload = JSON.parse(atob(credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+      const email = String(payload.email || '').toLowerCase()
+      if (!email) throw new Error('Email Google tidak terbaca')
+      const check = await gasPost<{ email: string; nama: string; role: string; idAO: string }>('authCheck', { email })
+      const role = check.role as UserRole
+      if (!['ADMIN', 'AO', 'MANAJEMEN'].includes(role)) {
+        throw new Error(`Role tidak dikenal: ${check.role}`)
+      }
+      const user: User = {
+        id: check.idAO || email,
+        nama: check.nama || payload.name || email,
+        email,
+        role,
+        isActive: true,
+      }
+      loginWithUser(user)
+      toast.success(`Selamat datang, ${user.nama}!`)
+      navigate('/dashboard', { replace: true })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Login Google gagal.'
+      setAuthError(msg)
+      toast.error(msg)
+    } finally {
+      setGoogleLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!GOOGLE_CONFIG.clientId) return
+    const initGoogle = () => {
+      const w = window as unknown as {
+        google?: {
+          accounts: {
+            id: {
+              initialize: (cfg: { client_id: string; callback: (r: { credential: string }) => void }) => void
+              renderButton: (el: HTMLElement, opt: Record<string, unknown>) => void
+            }
+          }
+        }
+      }
+      if (!w.google?.accounts?.id || !googleBtnRef.current) return
+      w.google.accounts.id.initialize({
+        client_id: GOOGLE_CONFIG.clientId,
+        callback: (r) => void handleGoogleCredential(r.credential),
+      })
+      w.google.accounts.id.renderButton(googleBtnRef.current, {
+        theme: 'outline',
+        size: 'large',
+        width: 320,
+        text: 'signin_with',
+      })
+    }
+    const w = window as unknown as { google?: unknown }
+    if (w.google) {
+      initGoogle()
+      return
+    }
+    const s = document.createElement('script')
+    s.src = 'https://accounts.google.com/gsi/client'
+    s.async = true
+    s.defer = true
+    s.onload = initGoogle
+    document.body.appendChild(s)
+  }, [GOOGLE_CONFIG.clientId])
 
   const {
     register,
@@ -133,6 +209,19 @@ export default function LoginPage() {
             Sistem Informasi & Pemetaan Potensi Alsintan (Fase 1)
           </p>
         </div>
+
+        {/* Google Sign-In (muncul jika Client ID diset) */}
+        {GOOGLE_CONFIG.clientId && (
+          <div className="card" style={{ padding: 20, border: '1px solid #e2e8f0', background: 'white', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a', marginBottom: 10 }}>
+              Masuk dengan Akun Google
+            </div>
+            <div ref={googleBtnRef} style={{ display: 'inline-block', minHeight: 40 }} />
+            {googleLoading && (
+              <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 8 }}>Memverifikasi email terdaftar...</p>
+            )}
+          </div>
+        )}
 
         {/* Prototype Shortcut Box */}
         <div className="card" style={{ padding: 20, border: '1px solid #e2e8f0', background: 'white' }}>

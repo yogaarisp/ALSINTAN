@@ -39,7 +39,27 @@ export default function SurveyPage() {
   const queryClient = useQueryClient()
   const [gpsLocation, setGpsLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(null)
   const [isGettingGps, setIsGettingGps] = useState(false)
+  const [foto, setFoto] = useState<{ base64: string; name: string; preview: string } | null>(null)
   const [activeTab, setActiveTab] = useState<'form' | 'history'>('form')
+
+  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+      toast.error('Format harus JPG atau PNG')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Ukuran foto maksimal 5MB')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = String(reader.result)
+      setFoto({ base64: dataUrl.split(',')[1] ?? '', name: file.name, preview: dataUrl })
+    }
+    reader.readAsDataURL(file)
+  }
 
   const { data: prospekData } = useQuery({
     queryKey: ['prospek'],
@@ -122,11 +142,13 @@ export default function SurveyPage() {
       accuracy: gpsLocation?.accuracy,
       catatan: data.catatan,
       ...(isAO ? { idAO: user!.id, namaAO: user!.nama } : {}),
+      ...(foto ? { fotoBase64: foto.base64, fotoName: foto.name } : {}),
     })
     await queryClient.invalidateQueries({ queryKey: ['survey'] })
     toast.success(`Data survey untuk ${data.namaGapoktan} tersimpan ke Spreadsheet!`)
     reset()
     setGpsLocation(null)
+    setFoto(null)
     setActiveTab('history')
   }
 
@@ -305,27 +327,65 @@ export default function SurveyPage() {
                 </div>
               </div>
 
-              {/* Photo Upload Section */}
+              {/* Photo Upload Section — foto disimpan ke Google Drive (NC5) */}
               <div>
                 <label className="input-label">Foto Dokumentasi Lapangan</label>
-                <div
-                  style={{
-                    border: '2px dashed #cbd5e1',
+                {foto ? (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: 10,
+                    border: '1px solid #bbf7d0',
                     borderRadius: 12,
-                    padding: '24px 16px',
-                    textAlign: 'center',
-                    background: '#f8fafc',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <Camera size={28} color="#94a3b8" style={{ margin: '0 auto 8px' }} />
-                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a' }}>
-                    Ambil Foto Kamera / Upload
+                    background: '#f0fdf4',
+                  }}>
+                    <img src={foto.preview} alt="Foto survey" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 8 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#15803d', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {foto.name}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                        Ikut tersimpan ke Drive saat survey dikirim
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-icon btn-sm"
+                      onClick={() => setFoto(null)}
+                      title="Hapus foto"
+                    >
+                      ✕
+                    </button>
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 2 }}>
-                    Format JPG, PNG (Maksimal 5MB)
-                  </div>
-                </div>
+                ) : (
+                  <label
+                    style={{
+                      display: 'block',
+                      border: '2px dashed #cbd5e1',
+                      borderRadius: 12,
+                      padding: '24px 16px',
+                      textAlign: 'center',
+                      background: '#f8fafc',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Camera size={28} color="#94a3b8" style={{ margin: '0 auto 8px' }} />
+                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a' }}>
+                      Ambil Foto Kamera / Upload
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 2 }}>
+                      Format JPG, PNG (Maksimal 5MB)
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png"
+                      capture="environment"
+                      style={{ display: 'none' }}
+                      onChange={handleFotoChange}
+                    />
+                  </label>
+                )}
               </div>
 
               {/* Catatan */}

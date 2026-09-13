@@ -14,6 +14,7 @@ interface AuthContextType {
   isLoading: boolean
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<void>
+  loginWithUser: (user: User) => void
   logout: () => void
 }
 
@@ -108,6 +109,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Login via Google Sign-In: user sudah diverifikasi email-nya oleh authCheck
+  const loginWithUser = (user: User): void => {
+    const newSession: AuthSession = {
+      user,
+      token: `google_${Date.now()}`,
+      expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(), // 8 jam
+    }
+    localStorage.setItem(SESSION_KEY, JSON.stringify(newSession))
+    setSession(newSession)
+  }
+
   const logout = () => {
     localStorage.removeItem(SESSION_KEY)
     setSession(null)
@@ -121,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         isAuthenticated: !!session,
         login,
+        loginWithUser,
         logout,
       }}
     >

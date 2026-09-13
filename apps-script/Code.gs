@@ -20,6 +20,7 @@ var SHEETS = {
   PROSPEK: 'DATA_PROSPEK',
   SURVEY: 'DATA_SURVEY',
   AO: 'MASTER_AO',
+  USERS: 'USERS',
 };
 
 // Spreadsheet sumber lain di folder ALSINTAN — dibaca live oleh web (read-only)
@@ -69,6 +70,7 @@ function handle(p) {
       case 'createSurvey': data = apiCreateSurvey(p); break;
       case 'createAO': data = apiCreateAO(p); break;
       case 'updateAOStatus': data = apiUpdateAOStatus(p); break;
+      case 'authCheck': data = apiAuthCheck(p); break;
       default: return json({ success: false, error: 'Unknown action: ' + action });
     }
     return json({ success: true, data: data, timestamp: new Date().toISOString() });
@@ -231,6 +233,7 @@ function mapSurvey(r) {
     namaAO: str(r['NAMA_AO']),
     timestamp: isoStr(r['TIMESTAMP']),
     status: str(r['STATUS']),
+    fotoUrl: str(r['FOTO_URL']),
   };
 }
 
@@ -353,6 +356,27 @@ function apiGetAO() {
   return ao;
 }
 
+// ----------------------------------------------------------- auth
+// Login Google: verifikasi email terdaftar di sheet USERS
+function apiAuthCheck(p) {
+  var email = str(p.email).toLowerCase();
+  if (!email) throw new Error('Email wajib diisi');
+  var rows = readRows(SHEETS.USERS);
+  var found = null;
+  rows.forEach(function (r) {
+    if (str(r['EMAIL']).toLowerCase() === email) found = r;
+  });
+  if (!found) throw new Error('Email ' + email + ' tidak terdaftar sebagai pengguna SIAP ALSINTAN');
+  var status = str(found['STATUS']) || 'AKTIF';
+  if (status !== 'AKTIF') throw new Error('Akun tidak aktif. Hubungi admin.');
+  return {
+    email: email,
+    nama: str(found['NAMA']),
+    role: str(found['ROLE']),
+    idAO: str(found['ID_AO']),
+  };
+}
+
 // ----------------------------------------------------------- write actions
 function apiCreateProspek(p) {
   if (!str(p.idKecamatan) || !str(p.namaGapoktan)) {
@@ -383,8 +407,13 @@ function apiCreateSurvey(p) {
   if (!str(p.idProspek)) throw new Error('idProspek wajib diisi');
   var prosp = apiGetProspek({ idProspek: str(p.idProspek) });
   if (!prosp) throw new Error('idProspek tidak dikenal: ' + str(p.idProspek));
+  var idSurvey = nextId(SHEETS.SURVEY, 'ID_SURVEY', 'S');
+  var fotoUrl = '';
+  if (str(p.fotoBase64) && str(p.fotoName)) {
+    fotoUrl = saveFotoSurvey(str(p.fotoBase64), str(p.fotoName), idSurvey);
+  }
   var obj = {
-    'ID_SURVEY': nextId(SHEETS.SURVEY, 'ID_SURVEY', 'S'),
+    'ID_SURVEY': idSurvey,
     'ID_PROSPEK': prosp.idProspek,
     'NAMA_GAPOKTAN': str(p.namaGapoktan) || prosp.namaGapoktan,
     'JUMLAH_ANGGOTA': num(p.jumlahAnggota),
@@ -399,9 +428,26 @@ function apiCreateSurvey(p) {
     'NAMA_AO': str(p.namaAO) || prosp.namaAO,
     'TIMESTAMP': str(p.timestamp) || new Date().toISOString(),
     'STATUS': str(p.status) || 'SURVEY_SELESAI',
+    'FOTO_URL': fotoUrl,
   };
   appendRow(SHEETS.SURVEY, Object.keys(obj), obj);
   return mapSurvey(obj);
+}
+
+// Simpan foto survey (base64) ke folder Drive khusus, return link
+function saveFotoSurvey(base64, fileName, idSurvey) {
+  if (base64.length > 8 * 1024 * 1024) {
+    throw new Error('Ukuran foto terlalu besar (maksimal sekitar 5MB)');
+  }
+  var folders = DriveApp.getFoldersByName('SIAP ALSINTAN - Foto Survey');
+  var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder('SIAP ALSINTAN - Foto Survey');
+  var dot = fileName.lastIndexOf('.');
+  var ext = dot >= 0 ? fileName.slice(dot).toLowerCase() : '.jpg';
+  var mime = ext === '.png' ? 'image/png' : 'image/jpeg';
+  var blob = Utilities.newBlob(Utilities.base64Decode(base64), mime, idSurvey + ext);
+  var file = folder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return file.getUrl();
 }
 
 function apiCreateAO(p) {

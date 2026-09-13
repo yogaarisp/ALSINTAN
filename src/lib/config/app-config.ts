@@ -36,16 +36,20 @@ export const FEATURES = {
   googleOAuth: import.meta.env.VITE_FEATURE_GOOGLE_OAUTH === 'true',
 } as const
 
+// Google Sign-In (GIS) — isi VITE_GOOGLE_CLIENT_ID untuk mengaktifkan
+export const GOOGLE_CONFIG = {
+  clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
+} as const
+
 export const PAGINATION = {
   defaultLimit: 20,
   maxLimit: 100,
 } as const
 
 export const MAP_CONFIG = {
-  // Default center — akan disesuaikan dengan data wilayah actual
-  // TODO: CONFIRM koordinat wilayah kerja — NC12
-  defaultCenter: [-6.5, 107.5] as [number, number],
-  defaultZoom: 9,
+  // Pusat Kab. Purworejo (di antara 16 kecamatan)
+  defaultCenter: [-7.68, 109.94] as [number, number],
+  defaultZoom: 10,
   minZoom: 7,
   maxZoom: 18,
   tileUrl: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
