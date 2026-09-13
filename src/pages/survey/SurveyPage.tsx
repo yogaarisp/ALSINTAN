@@ -12,12 +12,12 @@ import {
   ExternalLink,
   Sparkles,
 } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getProspek } from '@/lib/api/prospek'
+import { createSurvey, getSurvey } from '@/lib/api/survey'
 import { useAuth } from '@/lib/auth/auth-context'
-import { MOCK_SURVEY } from '@/lib/mock/mock-data'
 import { formatRupiah, formatDateTime, getStatusSurveyInfo } from '@/lib/utils'
-import type { DataSurvey, StatusSurvey } from '@/lib/types'
+import type { StatusSurvey } from '@/lib/types'
 
 const surveySchema = z.object({
   idProspek: z.string().min(1, 'Pilih data prospek / gapoktan'),
@@ -36,7 +36,7 @@ export default function SurveyPage() {
   const initialProspekId = searchParams.get('prospekId') || ''
 
   const { user } = useAuth()
-  const [surveyList, setSurveyList] = useState<DataSurvey[]>(MOCK_SURVEY)
+  const queryClient = useQueryClient()
   const [gpsLocation, setGpsLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(null)
   const [isGettingGps, setIsGettingGps] = useState(false)
   const [activeTab, setActiveTab] = useState<'form' | 'history'>('form')
@@ -45,6 +45,12 @@ export default function SurveyPage() {
     queryKey: ['prospek'],
     queryFn: () => getProspek({ limit: 100 }),
   })
+
+  const { data: surveyData, isLoading: loadingSurvey } = useQuery({
+    queryKey: ['survey'],
+    queryFn: () => getSurvey({ limit: 100 }),
+  })
+  const surveyList = surveyData?.items ?? []
 
   const {
     register,
@@ -102,29 +108,23 @@ export default function SurveyPage() {
   }
 
   const onSubmit = async (data: SurveyFormData) => {
-    // Simulasi submit ke Spreadsheet via Google Apps Script
-    await new Promise((r) => setTimeout(r, 1000))
-
-    const newSurvey: DataSurvey = {
-      idSurvey: `S${Date.now()}`,
+    // AO login → pakai identitas AO; selain itu biarkan backend memakai AO milik prospek
+    const isAO = user?.role === 'AO'
+    await createSurvey({
       idProspek: data.idProspek,
       namaGapoktan: data.namaGapoktan,
       jumlahAnggota: data.jumlahAnggota,
       luasSawah: data.luasSawah,
       jenisAlsintan: data.jenisAlsintan,
       estimasiHarga: data.estimasiHarga,
-      latitude: gpsLocation?.lat || -6.4123,
-      longitude: gpsLocation?.lng || 107.4567,
-      accuracy: gpsLocation?.accuracy || 5,
-      catatan: data.catatan || '',
-      idAO: user?.id || 'AO001',
-      namaAO: user?.nama || 'Petugas Lapangan',
-      timestamp: new Date().toISOString(),
-      status: 'SURVEY_SELESAI',
-    }
-
-    setSurveyList([newSurvey, ...surveyList])
-    toast.success(`Data survey untuk ${data.namaGapoktan} berhasil disimpan!`)
+      latitude: gpsLocation?.lat,
+      longitude: gpsLocation?.lng,
+      accuracy: gpsLocation?.accuracy,
+      catatan: data.catatan,
+      ...(isAO ? { idAO: user!.id, namaAO: user!.nama } : {}),
+    })
+    await queryClient.invalidateQueries({ queryKey: ['survey'] })
+    toast.success(`Data survey untuk ${data.namaGapoktan} tersimpan ke Spreadsheet!`)
     reset()
     setGpsLocation(null)
     setActiveTab('history')
@@ -192,7 +192,7 @@ export default function SurveyPage() {
             color: activeTab === 'history' ? '#16a34a' : '#64748b',
           }}
         >
-          Riwayat Hasil Survey ({surveyList.length})
+          Riwayat Hasil Survey ({surveyData?.total ?? 0})
         </button>
       </div>
 
@@ -371,7 +371,20 @@ export default function SurveyPage() {
                 </tr>
               </thead>
               <tbody>
-                {surveyList.map((s) => {
+                {loadingSurvey ? (
+                  <tr>
+                    <td colSpan={8}>
+                      <div className="skeleton" style={{ height: 24 }} />
+                    </td>
+                  </tr>
+                ) : surveyList.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} style={{ textAlign: 'center', color: '#64748b' }}>
+                      Belum ada survey tersimpan — isi form di tab sebelah, hasilnya masuk ke sini dan ke sheet DATA_SURVEY.
+                    </td>
+                  </tr>
+                ) : (
+                  surveyList.map((s) => {
                   const statusInfo = getStatusSurveyInfo(s.status as StatusSurvey)
                   return (
                     <tr key={s.idSurvey}>
@@ -395,7 +408,8 @@ export default function SurveyPage() {
                       </td>
                     </tr>
                   )
-                })}
+                  })
+                )}
               </tbody>
             </table>
           </div>
