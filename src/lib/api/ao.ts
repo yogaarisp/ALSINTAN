@@ -8,14 +8,25 @@ import type { MasterAO } from '@/lib/types'
 import { MOCK_AO } from '@/lib/mock/mock-data'
 import { gasGet, gasPost, isGasConfigured } from './gas'
 
+import { getLocalCache, setLocalCache } from '@/lib/utils/cache'
+
 const USE_MOCK = !isGasConfigured
 
 export async function getAO(): Promise<MasterAO[]> {
   if (USE_MOCK) {
-    await new Promise((r) => setTimeout(r, 400))
     return [...MOCK_AO]
   }
-  return gasGet<MasterAO[]>('getAO')
+  try {
+    const data = await gasGet<MasterAO[]>('getAO')
+    if (data && data.length > 0) {
+      setLocalCache('ao_all', data)
+    }
+    return data
+  } catch (err) {
+    const cached = getLocalCache<MasterAO[]>('ao_all')
+    if (cached) return cached
+    throw err
+  }
 }
 
 export async function getAOById(idAO: string): Promise<MasterAO | null> {

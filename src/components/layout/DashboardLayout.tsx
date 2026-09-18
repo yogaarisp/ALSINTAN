@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
@@ -13,12 +13,30 @@ const PAGE_TITLES: Record<string, string> = {
   '/ao': 'Account Officer',
   '/monitoring': 'Monitoring',
   '/reporting': 'Reporting',
+  '/sumber-data': 'Sumber Data Integrasi',
   '/pengaturan': 'Pengaturan',
 }
 
 export function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
+
+  // Close sidebar automatically on navigation
+  useEffect(() => {
+    setSidebarOpen(false)
+  }, [location.pathname])
+
+  // Prevent background scroll when mobile sidebar is open
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [sidebarOpen])
 
   const title = PAGE_TITLES[location.pathname] || 'SIAP ALSINTAN'
 
@@ -43,7 +61,7 @@ export function DashboardLayout() {
       </main>
 
       {/* Mobile bottom navigation */}
-      <MobileNav />
+      <MobileNav onMenuClick={() => setSidebarOpen(true)} />
     </div>
   )
 }

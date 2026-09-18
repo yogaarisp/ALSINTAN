@@ -19,21 +19,37 @@ import { getWilayah } from '@/lib/api/wilayah'
 import { getProspek } from '@/lib/api/prospek'
 import { getAO } from '@/lib/api/ao'
 import { rankWilayah } from '@/lib/services/priority-engine'
+import { getLocalCache } from '@/lib/utils/cache'
+import { MOCK_WILAYAH, MOCK_PROSPEK, MOCK_AO } from '@/lib/mock/mock-data'
+import type { MasterWilayah, MasterAO } from '@/lib/types'
 
 export default function MonitoringPage() {
-  const { data: wilayahList = [], isLoading: loadingWilayah } = useQuery({
+  const { data: wilayahList = [] } = useQuery({
     queryKey: ['wilayah'],
     queryFn: () => getWilayah(),
+    initialData: () => getLocalCache<MasterWilayah[]>('wilayah_all') ?? MOCK_WILAYAH,
+    initialDataUpdatedAt: 0,
   })
 
-  const { data: prospekData, isLoading: loadingProspek } = useQuery({
+  const { data: prospekData } = useQuery({
     queryKey: ['prospek'],
     queryFn: () => getProspek({ limit: 100 }),
+    initialData: () =>
+      getLocalCache('prospek_all') ?? {
+        items: MOCK_PROSPEK,
+        total: MOCK_PROSPEK.length,
+        page: 1,
+        limit: 100,
+        totalPages: 1,
+      },
+    initialDataUpdatedAt: 0,
   })
 
-  const { data: aoList = [], isLoading: loadingAO } = useQuery({
+  const { data: aoList = [] } = useQuery({
     queryKey: ['ao'],
     queryFn: getAO,
+    initialData: () => getLocalCache<MasterAO[]>('ao_all') ?? MOCK_AO,
+    initialDataUpdatedAt: 0,
   })
 
   const rankedWilayah = rankWilayah(wilayahList, prospekData?.items || [])
@@ -65,7 +81,7 @@ export default function MonitoringPage() {
     }
   })
 
-  const isLoading = loadingWilayah || loadingProspek || loadingAO
+  const isLoading = wilayahList.length === 0 && aoList.length === 0
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -183,7 +199,7 @@ export default function MonitoringPage() {
             </p>
           </div>
         </div>
-        <div style={{ overflowX: 'auto' }}>
+        <div className="table-responsive">
           <table className="data-table">
             <thead>
               <tr>

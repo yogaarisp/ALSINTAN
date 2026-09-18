@@ -465,7 +465,14 @@ function apiCreateAO(p) {
 
 // ----------------------------------------------------------- source actions
 function apiGetSources() {
-  return SOURCES.map(function (s) {
+  var cache = CacheService.getScriptCache();
+  var cached = cache.get('sources_meta');
+  if (cached) {
+    try {
+      return JSON.parse(cached);
+    } catch (e) {}
+  }
+  var res = SOURCES.map(function (s) {
     try {
       var file = SpreadsheetApp.openById(s.id);
       var tabs = file.getSheets().map(function (sh) {
@@ -494,6 +501,10 @@ function apiGetSources() {
       };
     }
   });
+  try {
+    cache.put('sources_meta', JSON.stringify(res), 21600); // Cache 6 jam
+  } catch (e) {}
+  return res;
 }
 
 function apiGetSourceData(p) {

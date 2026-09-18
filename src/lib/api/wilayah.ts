@@ -7,13 +7,13 @@
 
 import type { MasterWilayah, WilayahFilter } from '@/lib/types'
 import { MOCK_WILAYAH } from '@/lib/mock/mock-data'
+import { getLocalCache, setLocalCache } from '@/lib/utils/cache'
 import { gasGet, isGasConfigured } from './gas'
 
 const USE_MOCK = !isGasConfigured
 
 export async function getWilayah(filter?: WilayahFilter): Promise<MasterWilayah[]> {
   if (USE_MOCK) {
-    await new Promise((r) => setTimeout(r, 500))
     let data = [...MOCK_WILAYAH]
     if (filter?.kabupaten) {
       data = data.filter((w) => w.kabupaten === filter.kabupaten)
@@ -24,15 +24,24 @@ export async function getWilayah(filter?: WilayahFilter): Promise<MasterWilayah[
     return data
   }
 
-  let data = await gasGet<MasterWilayah[]>('getWilayah', {
-    kabupaten: filter?.kabupaten,
-    kecamatan: filter?.kecamatan,
-    komoditas: filter?.komoditas,
-  })
-  if (filter?.priorityLevel) {
-    data = data.filter((w) => w.priorityLevel === filter.priorityLevel)
+  try {
+    let data = await gasGet<MasterWilayah[]>('getWilayah', {
+      kabupaten: filter?.kabupaten,
+      kecamatan: filter?.kecamatan,
+      komoditas: filter?.komoditas,
+    })
+    if (!filter && data && data.length > 0) {
+      setLocalCache('wilayah_all', data)
+    }
+    if (filter?.priorityLevel) {
+      data = data.filter((w) => w.priorityLevel === filter.priorityLevel)
+    }
+    return data
+  } catch (err) {
+    const cached = getLocalCache<MasterWilayah[]>('wilayah_all')
+    if (cached && !filter) return cached
+    throw err
   }
-  return data
 }
 
 export async function getWilayahById(idKecamatan: string): Promise<MasterWilayah | null> {

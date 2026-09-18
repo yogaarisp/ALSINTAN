@@ -22,6 +22,9 @@ import {
   getScoreColor,
   getScoreBarColor,
 } from '@/lib/utils'
+import { getLocalCache } from '@/lib/utils/cache'
+import { MOCK_WILAYAH, MOCK_PROSPEK } from '@/lib/mock/mock-data'
+import type { MasterWilayah } from '@/lib/types'
 
 export default function PrioritasPage() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -30,14 +33,25 @@ export default function PrioritasPage() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [selectedResult, setSelectedResult] = useState<PriorityScoreResult | null>(null)
 
-  const { data: wilayahList = [], isLoading: loadingWilayah } = useQuery({
+  const { data: wilayahList = [] } = useQuery({
     queryKey: ['wilayah'],
     queryFn: () => getWilayah(),
+    initialData: () => getLocalCache<MasterWilayah[]>('wilayah_all') ?? MOCK_WILAYAH,
+    initialDataUpdatedAt: 0,
   })
 
-  const { data: prospekData, isLoading: loadingProspek } = useQuery({
+  const { data: prospekData } = useQuery({
     queryKey: ['prospek'],
     queryFn: () => getProspek({ limit: 100 }),
+    initialData: () =>
+      getLocalCache('prospek_all') ?? {
+        items: MOCK_PROSPEK,
+        total: MOCK_PROSPEK.length,
+        page: 1,
+        limit: 100,
+        totalPages: 1,
+      },
+    initialDataUpdatedAt: 0,
   })
 
   const rankedResults = rankWilayah(wilayahList, prospekData?.items || [])
@@ -84,7 +98,7 @@ export default function PrioritasPage() {
     }
   }
 
-  const isLoading = loadingWilayah || loadingProspek
+  const isLoading = wilayahList.length === 0 && !prospekData
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -113,10 +127,10 @@ export default function PrioritasPage() {
       </div>
 
       {/* Filter and Search Toolbar */}
-      <div className="card" style={{ padding: 16 }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="card" style={{ padding: 14 }}>
+        <div className="filter-bar-responsive" style={{ justifyContent: 'space-between' }}>
           {/* Search */}
-          <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 200 }}>
+          <div style={{ position: 'relative', flex: '1 1 200px', minWidth: 180 }}>
             <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
             <input
               type="text"
@@ -129,11 +143,11 @@ export default function PrioritasPage() {
           </div>
 
           {/* Priority filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Filter size={16} color="#64748b" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 auto' }}>
+            <Filter size={16} color="#64748b" style={{ flexShrink: 0 }} />
             <select
               className="input"
-              style={{ width: 'auto', paddingRight: 32 }}
+              style={{ width: '100%', minWidth: 150 }}
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
             >
@@ -144,7 +158,7 @@ export default function PrioritasPage() {
             </select>
           </div>
 
-          <div style={{ fontSize: '0.8125rem', color: '#64748b', fontWeight: 600 }}>
+          <div style={{ fontSize: '0.8125rem', color: '#64748b', fontWeight: 600, paddingLeft: 4 }}>
             Total Wilayah: <span style={{ color: '#16a34a' }}>{filteredData.length}</span>
           </div>
         </div>
@@ -152,7 +166,7 @@ export default function PrioritasPage() {
 
       {/* Main Ranking Table */}
       <div className="card">
-        <div style={{ overflowX: 'auto' }}>
+        <div className="table-responsive">
           <table className="data-table">
             <thead>
               <tr>

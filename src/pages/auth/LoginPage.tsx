@@ -120,7 +120,7 @@ export default function LoginPage() {
       w.google.accounts.id.renderButton(googleBtnRef.current, {
         theme: 'outline',
         size: 'large',
-        width: 320,
+        width: typeof window !== 'undefined' ? Math.min(320, Math.max(260, window.innerWidth - 64)) : 280,
         text: 'signin_with',
       })
     }
@@ -273,7 +273,7 @@ export default function LoginPage() {
                     e.currentTarget.style.boxShadow = 'none'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
                     <div style={{
                       width: 36,
                       height: 36,
@@ -287,11 +287,11 @@ export default function LoginPage() {
                     }}>
                       <Icon size={18} />
                     </div>
-                    <div>
+                    <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0f172a' }}>
                         {acc.title}
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b', wordBreak: 'break-word' }}>
                         {acc.desc}
                       </div>
                     </div>
@@ -305,6 +305,8 @@ export default function LoginPage() {
                     background: acc.badgeBg,
                     borderRadius: 6,
                     whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                    marginLeft: 8,
                   }}>
                     {isSelectedLoading ? 'Masuk...' : 'Login →'}
                   </div>

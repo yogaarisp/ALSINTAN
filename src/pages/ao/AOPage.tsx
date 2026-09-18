@@ -15,6 +15,7 @@ import { getProspek } from '@/lib/api/prospek'
 import { getWilayah } from '@/lib/api/wilayah'
 import { rankWilayah } from '@/lib/services/priority-engine'
 import { useAuth } from '@/lib/auth/auth-context'
+import type { MasterAO, MasterWilayah } from '@/lib/types'
 import {
   formatDate,
   formatHektar,
@@ -22,6 +23,8 @@ import {
   getStatusProspekInfo,
   getScoreColor,
 } from '@/lib/utils'
+import { getLocalCache } from '@/lib/utils/cache'
+import { MOCK_AO, MOCK_WILAYAH, MOCK_PROSPEK } from '@/lib/mock/mock-data'
 
 const aoSchema = z.object({
   namaAO: z.string().min(3, 'Nama AO minimal 3 karakter'),
@@ -38,19 +41,32 @@ export default function AOPage() {
 
   const isAdminOrManager = user?.role === 'ADMIN' || user?.role === 'MANAJEMEN'
 
-  const { data: aoList = [], isLoading: loadingAO } = useQuery({
+  const { data: aoList = [] } = useQuery({
     queryKey: ['ao'],
     queryFn: getAO,
+    initialData: () => getLocalCache<MasterAO[]>('ao_all') ?? MOCK_AO,
+    initialDataUpdatedAt: 0,
   })
 
-  const { data: wilayahList = [], isLoading: loadingWilayah } = useQuery({
+  const { data: wilayahList = [] } = useQuery({
     queryKey: ['wilayah'],
     queryFn: () => getWilayah(),
+    initialData: () => getLocalCache<MasterWilayah[]>('wilayah_all') ?? MOCK_WILAYAH,
+    initialDataUpdatedAt: 0,
   })
 
-  const { data: prospekData, isLoading: loadingProspek } = useQuery({
+  const { data: prospekData } = useQuery({
     queryKey: ['prospek'],
     queryFn: () => getProspek({ limit: 100 }),
+    initialData: () =>
+      getLocalCache('prospek_all') ?? {
+        items: MOCK_PROSPEK,
+        total: MOCK_PROSPEK.length,
+        page: 1,
+        limit: 100,
+        totalPages: 1,
+      },
+    initialDataUpdatedAt: 0,
   })
 
   // Priority ranking
@@ -117,7 +133,7 @@ export default function AOPage() {
     createMutation.mutate(data)
   }
 
-  const isLoading = loadingAO || loadingWilayah || loadingProspek
+  const isLoading = aoList.length === 0 && wilayahList.length === 0
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -167,7 +183,7 @@ export default function AOPage() {
               </p>
             </div>
           </div>
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-responsive">
             <table className="data-table">
               <thead>
                 <tr>
@@ -224,7 +240,7 @@ export default function AOPage() {
                       <td>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                           {ao.wilayah && ao.wilayah.length > 0 ? (
-                            ao.wilayah.map((w) => (
+                            ao.wilayah.map((w: string) => (
                               <span key={w} className="badge" style={{ background: '#f8fafc', color: '#334155', borderColor: '#e2e8f0' }}>
                                 {w}
                               </span>
@@ -459,7 +475,7 @@ export default function AOPage() {
               Tambah Prospek
             </Link>
           </div>
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-responsive">
             <table className="data-table">
               <thead>
                 <tr>

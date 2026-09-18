@@ -7,14 +7,24 @@
 
 import type { DashboardKPI } from '@/lib/types'
 import { MOCK_DASHBOARD_KPI } from '@/lib/mock/mock-data'
+import { getLocalCache, setLocalCache } from '@/lib/utils/cache'
 import { gasGet, isGasConfigured } from './gas'
 
 const USE_MOCK = !isGasConfigured
 
 export async function getDashboardKPI(): Promise<DashboardKPI> {
   if (USE_MOCK) {
-    await new Promise((r) => setTimeout(r, 600))
     return { ...MOCK_DASHBOARD_KPI }
   }
-  return gasGet<DashboardKPI>('getDashboardKPI')
+  try {
+    const data = await gasGet<DashboardKPI>('getDashboardKPI')
+    if (data) {
+      setLocalCache('dashboard_kpi', data)
+    }
+    return data
+  } catch (err) {
+    const cached = getLocalCache<DashboardKPI>('dashboard_kpi')
+    if (cached) return cached
+    throw err
+  }
 }

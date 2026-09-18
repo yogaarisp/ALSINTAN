@@ -6,10 +6,22 @@
 // ============================================================
 
 import type { SourceInfo, SourceData } from '@/lib/types'
+import { DEFAULT_SOURCES } from '@/lib/mock/mock-sources'
+import { getLocalCache, setLocalCache } from '@/lib/utils/cache'
 import { gasGet } from './gas'
 
 export async function getSources(): Promise<SourceInfo[]> {
-  return gasGet<SourceInfo[]>('getSources')
+  try {
+    const data = await gasGet<SourceInfo[]>('getSources')
+    if (data && data.length > 0) {
+      setLocalCache('sources_list', data)
+    }
+    return data
+  } catch (err) {
+    const cached = getLocalCache<SourceInfo[]>('sources_list', DEFAULT_SOURCES)
+    if (cached) return cached
+    throw err
+  }
 }
 
 export interface SourceDataParams {
@@ -21,5 +33,16 @@ export interface SourceDataParams {
 }
 
 export async function getSourceData(params: SourceDataParams): Promise<SourceData> {
-  return gasGet<SourceData>('getSourceData', { ...params })
+  const cacheKey = `source_data_${params.key}_${params.tab}_${params.q || ''}_${params.page || 1}`
+  try {
+    const data = await gasGet<SourceData>('getSourceData', { ...params })
+    if (data && data.rows) {
+      setLocalCache(cacheKey, data)
+    }
+    return data
+  } catch (err) {
+    const cached = getLocalCache<SourceData>(cacheKey)
+    if (cached) return cached
+    throw err
+  }
 }

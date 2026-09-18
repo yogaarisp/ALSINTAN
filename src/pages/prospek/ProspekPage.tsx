@@ -16,11 +16,14 @@ import {
 } from 'lucide-react'
 import { getProspek, createProspek } from '@/lib/api/prospek'
 import { getWilayah } from '@/lib/api/wilayah'
-import type { StatusProspek, CreateProspekForm, DataProspek } from '@/lib/types'
+import type { StatusProspek, CreateProspekForm, DataProspek, MasterWilayah } from '@/lib/types'
 import {
   formatDate,
   getStatusProspekInfo,
 } from '@/lib/utils'
+
+import { getLocalCache } from '@/lib/utils/cache'
+import { MOCK_WILAYAH, MOCK_PROSPEK } from '@/lib/mock/mock-data'
 
 const prospekSchema = z.object({
   idKecamatan: z.string().min(1, 'Pilih kecamatan'),
@@ -48,14 +51,25 @@ export default function ProspekPage() {
     }
   }, [initialKecamatan])
 
-  const { data: prospekData, isLoading: loadingProspek } = useQuery({
+  const { data: prospekData } = useQuery({
     queryKey: ['prospek'],
     queryFn: () => getProspek({ limit: 100 }),
+    initialData: () =>
+      getLocalCache('prospek_all') ?? {
+        items: MOCK_PROSPEK,
+        total: MOCK_PROSPEK.length,
+        page: 1,
+        limit: 100,
+        totalPages: 1,
+      },
+    initialDataUpdatedAt: 0,
   })
 
   const { data: wilayahList = [] } = useQuery({
     queryKey: ['wilayah'],
     queryFn: () => getWilayah(),
+    initialData: () => getLocalCache<MasterWilayah[]>('wilayah_all') ?? MOCK_WILAYAH,
+    initialDataUpdatedAt: 0,
   })
 
   const {
@@ -135,10 +149,10 @@ export default function ProspekPage() {
       </div>
 
       {/* Toolbar & Filters */}
-      <div className="card" style={{ padding: 16 }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="card" style={{ padding: 14 }}>
+        <div className="filter-bar-responsive" style={{ justifyContent: 'space-between' }}>
           {/* Search */}
-          <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 200 }}>
+          <div style={{ position: 'relative', flex: '1 1 200px', minWidth: 180 }}>
             <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
             <input
               type="text"
@@ -151,11 +165,11 @@ export default function ProspekPage() {
           </div>
 
           {/* Status Filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Filter size={16} color="#64748b" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 auto' }}>
+            <Filter size={16} color="#64748b" style={{ flexShrink: 0 }} />
             <select
               className="input"
-              style={{ width: 'auto', paddingRight: 32 }}
+              style={{ width: '100%', minWidth: 140 }}
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -170,11 +184,11 @@ export default function ProspekPage() {
           </div>
 
           {/* Kecamatan Filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Building size={16} color="#64748b" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 auto' }}>
+            <Building size={16} color="#64748b" style={{ flexShrink: 0 }} />
             <select
               className="input"
-              style={{ width: 'auto', paddingRight: 32 }}
+              style={{ width: '100%', minWidth: 140 }}
               value={kecamatanFilter}
               onChange={(e) => setKecamatanFilter(e.target.value)}
             >
@@ -185,7 +199,7 @@ export default function ProspekPage() {
             </select>
           </div>
 
-          <div style={{ fontSize: '0.8125rem', color: '#64748b', fontWeight: 600 }}>
+          <div style={{ fontSize: '0.8125rem', color: '#64748b', fontWeight: 600, paddingLeft: 4 }}>
             Total: <span style={{ color: '#16a34a' }}>{filteredItems.length} Prospek</span>
           </div>
         </div>
@@ -193,7 +207,7 @@ export default function ProspekPage() {
 
       {/* Prospek List Table */}
       <div className="card">
-        <div style={{ overflowX: 'auto' }}>
+        <div className="table-responsive">
           <table className="data-table">
             <thead>
               <tr>
@@ -209,7 +223,7 @@ export default function ProspekPage() {
               </tr>
             </thead>
             <tbody>
-              {loadingProspek ? (
+              {!prospekData ? (
                 [1, 2, 3, 4].map((i) => (
                   <tr key={i}>
                     <td colSpan={9}>

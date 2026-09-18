@@ -15,7 +15,11 @@ const MOBILE_NAV = [
   { to: '/prospek', icon: ClipboardList, label: 'Prospek' },
 ]
 
-export function MobileNav() {
+interface MobileNavProps {
+  onMenuClick?: () => void
+}
+
+export function MobileNav({ onMenuClick }: MobileNavProps) {
   const { user } = useAuth()
 
   return (
@@ -72,16 +76,25 @@ export function MobileNav() {
         </NavLink>
       ))}
 
-      {/* Profile */}
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 3,
-        color: '#94a3b8',
-      }}>
+      {/* Profile / Menu Drawer Trigger */}
+      <button
+        type="button"
+        onClick={onMenuClick}
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 3,
+          color: '#64748b',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          padding: 0,
+        }}
+        aria-label="Buka menu lengkap"
+      >
         {user ? (
           <div style={{
             width: 24,
@@ -101,8 +114,8 @@ export function MobileNav() {
         ) : (
           <UserCircle size={22} strokeWidth={1.75} />
         )}
-        <span style={{ fontSize: '0.6875rem', fontWeight: 500 }}>Profil</span>
-      </div>
+        <span style={{ fontSize: '0.6875rem', fontWeight: 500 }}>Menu</span>
+      </button>
     </nav>
   )
 }

@@ -7,13 +7,13 @@
 import type { DataProspek, ProspekFilter, PaginatedResponse, CreateProspekForm } from '@/lib/types'
 import { MOCK_PROSPEK } from '@/lib/mock/mock-data'
 import { PAGINATION } from '@/lib/config/app-config'
+import { getLocalCache, setLocalCache } from '@/lib/utils/cache'
 import { gasGet, gasPost, isGasConfigured } from './gas'
 
 const USE_MOCK = !isGasConfigured
 
 export async function getProspek(filter?: ProspekFilter): Promise<PaginatedResponse<DataProspek>> {
   if (USE_MOCK) {
-    await new Promise((r) => setTimeout(r, 500))
     let data = [...MOCK_PROSPEK]
 
     if (filter?.status) data = data.filter((p) => p.status === filter.status)
@@ -37,17 +37,32 @@ export async function getProspek(filter?: ProspekFilter): Promise<PaginatedRespo
     return { items, total, page, limit, totalPages: Math.ceil(total / limit) }
   }
 
-  return gasGet<PaginatedResponse<DataProspek>>('getProspek', {
-    status: filter?.status,
-    idAO: filter?.idAO,
-    kecamatan: filter?.kecamatan,
-    komoditas: filter?.komoditas,
-    dateFrom: filter?.dateFrom,
-    dateTo: filter?.dateTo,
-    search: filter?.search,
-    page: filter?.page,
-    limit: filter?.limit,
-  })
+  try {
+    const res = await gasGet<PaginatedResponse<DataProspek>>('getProspek', {
+      status: filter?.status,
+      idAO: filter?.idAO,
+      kecamatan: filter?.kecamatan,
+      komoditas: filter?.komoditas,
+      dateFrom: filter?.dateFrom,
+      dateTo: filter?.dateTo,
+      search: filter?.search,
+      page: filter?.page,
+      limit: filter?.limit,
+    })
+    if (res && res.items) {
+      if (filter?.limit === 5) {
+        setLocalCache('prospek_dashboard', res)
+      } else if (!filter || Object.keys(filter).length === 0 || filter.limit === 100) {
+        setLocalCache('prospek_all', res)
+      }
+    }
+    return res
+  } catch (err) {
+    const cacheKey = filter?.limit === 5 ? 'prospek_dashboard' : 'prospek_all'
+    const cached = getLocalCache<PaginatedResponse<DataProspek>>(cacheKey)
+    if (cached) return cached
+    throw err
+  }
 }
 
 export async function getProspekById(idProspek: string): Promise<DataProspek | null> {

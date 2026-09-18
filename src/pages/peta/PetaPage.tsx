@@ -19,7 +19,7 @@ import { getWilayah } from '@/lib/api/wilayah'
 import { getProspek } from '@/lib/api/prospek'
 import { rankWilayah } from '@/lib/services/priority-engine'
 import { MAP_CONFIG } from '@/lib/config/app-config'
-import type { PriorityLevel } from '@/lib/types'
+import type { PriorityLevel, MasterWilayah } from '@/lib/types'
 import {
   formatHektar,
   formatNumber,
@@ -66,20 +66,34 @@ function createCustomMarkerIcon(score: number, level: PriorityLevel) {
   })
 }
 
+import { getLocalCache } from '@/lib/utils/cache'
+import { MOCK_WILAYAH, MOCK_PROSPEK } from '@/lib/mock/mock-data'
+
 export default function PetaPage() {
   const [selectedWilayahId, setSelectedWilayahId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedPriority, setSelectedPriority] = useState<string>('ALL')
   const [selectedKomoditas, setSelectedKomoditas] = useState<string>('ALL')
 
-  const { data: wilayahList = [], isLoading: loadingWilayah } = useQuery({
+  const { data: wilayahList = [] } = useQuery({
     queryKey: ['wilayah'],
     queryFn: () => getWilayah(),
+    initialData: () => getLocalCache<MasterWilayah[]>('wilayah_all') ?? MOCK_WILAYAH,
+    initialDataUpdatedAt: 0,
   })
 
-  const { data: prospekData, isLoading: loadingProspek } = useQuery({
+  const { data: prospekData } = useQuery({
     queryKey: ['prospek'],
     queryFn: () => getProspek({ limit: 100 }),
+    initialData: () =>
+      getLocalCache('prospek_all') ?? {
+        items: MOCK_PROSPEK,
+        total: MOCK_PROSPEK.length,
+        page: 1,
+        limit: 100,
+        totalPages: 1,
+      },
+    initialDataUpdatedAt: 0,
   })
 
   // Calculate priority rankings
@@ -128,10 +142,10 @@ export default function PetaPage() {
       </div>
 
       {/* Header & Filter Bar */}
-      <div className="card" style={{ padding: 16 }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="card" style={{ padding: 14 }}>
+        <div className="filter-bar-responsive" style={{ justifyContent: 'space-between' }}>
           {/* Search */}
-          <div style={{ position: 'relative', flex: '1 1 220px', minWidth: 200 }}>
+          <div style={{ position: 'relative', flex: '1 1 200px', minWidth: 180 }}>
             <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
             <input
               type="text"
@@ -144,11 +158,11 @@ export default function PetaPage() {
           </div>
 
           {/* Filter Priority */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Filter size={16} color="#64748b" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 auto' }}>
+            <Filter size={16} color="#64748b" style={{ flexShrink: 0 }} />
             <select
               className="input"
-              style={{ width: 'auto', paddingRight: 32 }}
+              style={{ width: '100%', minWidth: 140 }}
               value={selectedPriority}
               onChange={(e) => setSelectedPriority(e.target.value)}
             >
@@ -160,11 +174,11 @@ export default function PetaPage() {
           </div>
 
           {/* Filter Komoditas */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Layers size={16} color="#64748b" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 auto' }}>
+            <Layers size={16} color="#64748b" style={{ flexShrink: 0 }} />
             <select
               className="input"
-              style={{ width: 'auto', paddingRight: 32 }}
+              style={{ width: '100%', minWidth: 140 }}
               value={selectedKomoditas}
               onChange={(e) => setSelectedKomoditas(e.target.value)}
             >
@@ -176,33 +190,26 @@ export default function PetaPage() {
           </div>
 
           {/* Count Badge */}
-          <div style={{ fontSize: '0.8125rem', color: '#64748b', fontWeight: 600 }}>
+          <div style={{ fontSize: '0.8125rem', color: '#64748b', fontWeight: 600, paddingLeft: 4 }}>
             Menampilkan: <span style={{ color: '#16a34a' }}>{filteredWilayah.length} Kecamatan</span>
           </div>
         </div>
       </div>
 
       {/* Map + Detail Panel Container */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: selectedWilayah ? '1fr 340px' : '1fr',
-          gap: 20,
-          minHeight: 520,
-          transition: 'all 0.3s ease',
-        }}
-      >
+      <div className={`peta-layout ${selectedWilayah ? 'has-detail' : ''}`}>
         {/* Leaflet Map Box */}
         <div
           className="card"
           style={{
-            height: 520,
+            minHeight: 380,
+            height: 480,
             overflow: 'hidden',
             position: 'relative',
             borderRadius: 14,
           }}
         >
-          {loadingWilayah || loadingProspek ? (
+          {wilayahList.length === 0 ? (
             <div className="skeleton" style={{ height: '100%', width: '100%' }} />
           ) : (
             <MapContainer
@@ -265,20 +272,21 @@ export default function PetaPage() {
           <div
             style={{
               position: 'absolute',
-              bottom: 16,
-              left: 16,
+              bottom: 12,
+              left: 12,
               zIndex: 1000,
-              background: 'rgba(255,255,255,0.92)',
+              background: 'rgba(255,255,255,0.94)',
               backdropFilter: 'blur(8px)',
-              padding: '10px 14px',
+              padding: '8px 12px',
               borderRadius: 10,
               border: '1px solid #e2e8f0',
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-              fontSize: '0.75rem',
+              fontSize: '0.7rem',
+              maxWidth: 'calc(100% - 24px)',
             }}
           >
-            <div style={{ fontWeight: 700, marginBottom: 6, color: '#0f172a' }}>Keterangan Prioritas</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ fontWeight: 700, marginBottom: 4, color: '#0f172a' }}>Keterangan Prioritas</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#dc2626' }} />
                 <span>Prioritas Tinggi (Skor &gt;= 70)</span>
@@ -380,7 +388,7 @@ export default function PetaPage() {
                   Komoditas Utama
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {selectedWilayah.komoditas.map((k) => (
+                  {selectedWilayah.komoditas.map((k: string) => (
                     <span key={k} className="badge" style={{ background: '#f0fdf4', color: '#16a34a', borderColor: '#bbf7d0' }}>
                       {k}
                     </span>

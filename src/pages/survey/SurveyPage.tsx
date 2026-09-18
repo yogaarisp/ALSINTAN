@@ -405,7 +405,7 @@ export default function SurveyPage() {
                 type="submit"
                 disabled={isSubmitting}
                 className="btn btn-primary btn-lg"
-                style={{ width: '100%', maxWidth: 280, justifyContent: 'center' }}
+                style={{ width: '100%', maxWidth: 320, justifyContent: 'center' }}
               >
                 <CheckCircle2 size={18} />
                 {isSubmitting ? 'Menyimpan ke Spreadsheet...' : 'Kirim Hasil Survey'}
@@ -416,7 +416,7 @@ export default function SurveyPage() {
       ) : (
         /* Riwayat Survey */
         <div className="card">
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-responsive">
             <table className="data-table">
               <thead>
                 <tr>
