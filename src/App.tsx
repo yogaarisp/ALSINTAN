@@ -10,6 +10,7 @@ import AOPage from '@/pages/ao/AOPage'
 import SurveyPage from '@/pages/survey/SurveyPage'
 import MonitoringPage from '@/pages/monitoring/MonitoringPage'
 import SumberDataPage from '@/pages/sumber-data/SumberDataPage'
+import PengaturanPage from '@/pages/pengaturan/PengaturanPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -75,6 +76,7 @@ export default function App() {
           <Route path="survey" element={<SurveyPage />} />
           <Route path="monitoring" element={<MonitoringPage />} />
           <Route path="sumber-data" element={<SumberDataPage />} />
+          <Route path="pengaturan" element={<PengaturanPage />} />
         </Route>
 
         {/* 404 */}

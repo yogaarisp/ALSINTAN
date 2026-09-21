@@ -6,7 +6,7 @@
 // Ref: PRD Section 5 & 6, NEED_CONFIRMATION NC1
 // ============================================================
 
-import { PRIORITY_CONFIG, getPriorityLevel } from '@/lib/config/priority-config'
+import { getPriorityConfig, getPriorityLevel } from '@/lib/config/priority-config'
 import type { MasterWilayah, DataProspek, PriorityScoreResult } from '@/lib/types'
 
 export interface PriorityInput {
@@ -30,8 +30,9 @@ function normalize(value: number, max: number, inverse = false): number {
  */
 export function calculatePriorityScore(input: PriorityInput): PriorityScoreResult {
   const { wilayah, prospeks = [] } = input
-  const norm = PRIORITY_CONFIG.normalization
-  const weights = PRIORITY_CONFIG.weights
+  const config = getPriorityConfig()
+  const norm = config.normalization
+  const weights = config.weights
 
   // Normalisasi setiap komponen
   const luasLahanScore = normalize(wilayah.luasLahan, norm.luasLahan.max)
@@ -69,7 +70,7 @@ export function calculatePriorityScore(input: PriorityInput): PriorityScoreResul
       prospekExisting: Math.round(prospekScore),
     },
     calculatedAt: new Date().toISOString(),
-    isDevOnly: PRIORITY_CONFIG.isDevelopmentOnly,
+    isDevOnly: config.isDevelopmentOnly,
   }
 }
 

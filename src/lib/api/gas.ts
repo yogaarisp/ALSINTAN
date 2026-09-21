@@ -7,10 +7,21 @@
 
 import { API_CONFIG } from '@/lib/config/app-config'
 import { apiClient } from './client'
+import { getGasUrlOverride } from '@/lib/settings/settings-store'
 import type { ApiResponse } from '@/lib/types'
 
-export const isGasConfigured =
-  Boolean(API_CONFIG.gasApiUrl) && !API_CONFIG.gasApiUrl.includes('PLACEHOLDER')
+/**
+ * URL efektif Apps Script — memakai override dari Settings (Administrator)
+ * jika tersimpan, selain itu URL bawaan dari env/config.
+ */
+export function getEffectiveGasUrl(): string {
+  return getGasUrlOverride() || API_CONFIG.gasApiUrl
+}
+
+export function isGasConfigured(): boolean {
+  const url = getEffectiveGasUrl()
+  return Boolean(url) && !url.includes('PLACEHOLDER')
+}
 
 function isGasJson(res: unknown): res is ApiResponse<unknown> {
   return Boolean(res && typeof res === 'object' && 'success' in res)

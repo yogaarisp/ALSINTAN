@@ -8,6 +8,7 @@
 // ============================================================
 
 import type { PriorityLevel } from '@/lib/types'
+import { getPriorityOverrides } from '@/lib/settings/settings-store'
 
 export interface PriorityWeights {
   luasLahan: number       // bobot luas lahan (0-1)
@@ -70,9 +71,25 @@ export const PRIORITY_CONFIG: PriorityConfig = {
   },
 }
 
+/**
+ * Konfigurasi efektif Priority Engine.
+ * Menggunakan override dari Settings (Administrator) jika tersedia,
+ * selain itu kembali ke nilai bawaan PRIORITY_CONFIG.
+ */
+export function getPriorityConfig(): PriorityConfig {
+  const overrides = getPriorityOverrides()
+  if (!overrides) return PRIORITY_CONFIG
+  return {
+    ...PRIORITY_CONFIG,
+    weights: { ...PRIORITY_CONFIG.weights, ...overrides.weights },
+    thresholds: { ...PRIORITY_CONFIG.thresholds, ...overrides.thresholds },
+  }
+}
+
 export function getPriorityLevel(score: number): PriorityLevel {
-  if (score >= PRIORITY_CONFIG.thresholds.tinggi) return 'TINGGI'
-  if (score >= PRIORITY_CONFIG.thresholds.sedang) return 'SEDANG'
+  const thresholds = getPriorityConfig().thresholds
+  if (score >= thresholds.tinggi) return 'TINGGI'
+  if (score >= thresholds.sedang) return 'SEDANG'
   return 'RENDAH'
 }
 

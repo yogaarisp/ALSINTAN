@@ -7,6 +7,7 @@
 
 import axios, { type AxiosInstance, type AxiosRequestConfig } from 'axios'
 import { API_CONFIG } from '@/lib/config/app-config'
+import { getGasUrlOverride } from '@/lib/settings/settings-store'
 import type { ApiResponse } from '@/lib/types'
 
 class ApiClient {
@@ -28,6 +29,11 @@ class ApiClient {
     // Request interceptor
     this.client.interceptors.request.use(
       (config) => {
+        // Gunakan URL override dari Settings (tanpa perlu reload)
+        const urlOverride = getGasUrlOverride()
+        if (urlOverride) {
+          config.baseURL = urlOverride
+        }
         // Tambahkan API key jika ada
         if (API_CONFIG.gasApiKey) {
           config.params = {
