@@ -267,7 +267,7 @@ export default function SumberDataPage() {
                     {data.rows.map((row, ri) => (
                       <tr key={ri}>
                         {row.map((cell, ci) => (
-                          <td key={ci} style={{ whiteSpace: 'nowrap', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <td key={ci} data-label={data.header[ci]} style={{ whiteSpace: 'nowrap', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {fmtCell(cell)}
                           </td>
                         ))}

@@ -812,6 +812,76 @@ html, body, #root, .app-layout {
 }
 
 /* ─────────────────────────────────────────
+   Mobile: Data Table → Card Layout
+   Setiap baris menjadi kartu vertikal (label : nilai)
+   sehingga tidak perlu scroll horizontal
+   ───────────────────────────────────────── */
+@media (max-width: 640px) {
+  .table-responsive .data-table {
+    display: block;
+    width: 100%;
+    font-size: 0.8125rem;
+  }
+
+  .table-responsive .data-table thead {
+    display: none;
+  }
+
+  .table-responsive .data-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .table-responsive .data-table tr {
+    display: block;
+    width: 100%;
+    margin-bottom: 12px;
+    border: 1px solid var(--color-neutral-200);
+    border-radius: 12px;
+    background: white;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .table-responsive .data-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--color-neutral-100);
+    text-align: right;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    min-width: 0;
+  }
+
+  .table-responsive .data-table tr:last-child td:last-child {
+    border-bottom: none;
+  }
+
+  .table-responsive .data-table td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--color-neutral-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .table-responsive .data-table td[colspan] {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .table-responsive .data-table td[colspan]::before {
+    content: none;
+  }
+}
+
+/* ─────────────────────────────────────────
    Sidebar Overlay (mobile)
    ───────────────────────────────────────── */
 .sidebar-overlay {

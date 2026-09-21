@@ -212,10 +212,10 @@ export default function AOPage() {
 
                   return (
                     <tr key={ao.idAO}>
-                      <td style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#94a3b8' }}>
+                      <td data-label="ID AO" style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#94a3b8' }}>
                         {ao.idAO}
                       </td>
-                      <td style={{ fontWeight: 700, color: '#0f172a' }}>
+                      <td data-label="Nama Petugas" style={{ fontWeight: 700, color: '#0f172a' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <div style={{
                             width: 28,
@@ -234,10 +234,10 @@ export default function AOPage() {
                           <span>{ao.namaAO}</span>
                         </div>
                       </td>
-                      <td style={{ fontSize: '0.8125rem', color: '#64748b' }}>
+                      <td data-label="Email" style={{ fontSize: '0.8125rem', color: '#64748b' }}>
                         {ao.email || '-'}
                       </td>
-                      <td>
+                      <td data-label="Wilayah Penugasan">
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                           {ao.wilayah && ao.wilayah.length > 0 ? (
                             ao.wilayah.map((w: string) => (
@@ -250,10 +250,10 @@ export default function AOPage() {
                           )}
                         </div>
                       </td>
-                      <td style={{ fontWeight: 600, color: aoProspectsCount > 0 ? '#16a34a' : '#64748b' }}>
+                      <td data-label="Prospek Aktif" style={{ fontWeight: 600, color: aoProspectsCount > 0 ? '#16a34a' : '#64748b' }}>
                         {aoProspectsCount} Prospek
                       </td>
-                      <td>
+                      <td data-label="Status">
                         <span
                           className="badge"
                           style={{
@@ -266,7 +266,7 @@ export default function AOPage() {
                         </span>
                       </td>
                       {user?.role === 'ADMIN' && (
-                        <td style={{ textAlign: 'right' }}>
+                        <td data-label="Aksi" style={{ textAlign: 'right' }}>
                           <button
                             onClick={() =>
                               statusMutation.mutate({
@@ -502,21 +502,21 @@ export default function AOPage() {
                     const statusInfo = getStatusProspekInfo(p.status)
                     return (
                       <tr key={p.idProspek}>
-                        <td style={{ fontWeight: 700, color: '#0f172a' }}>{p.namaGapoktan}</td>
-                        <td>Kec. {p.kecamatan}</td>
-                        <td>
+                        <td data-label="Gapoktan" style={{ fontWeight: 700, color: '#0f172a' }}>{p.namaGapoktan}</td>
+                        <td data-label="Kecamatan">Kec. {p.kecamatan}</td>
+                        <td data-label="Komoditas">
                           <span className="badge" style={{ background: '#f0fdf4', color: '#16a34a', borderColor: '#bbf7d0' }}>
                             {p.komoditas}
                           </span>
                         </td>
-                        <td style={{ fontSize: '0.8125rem' }}>{p.estimasiKebutuhan || '-'}</td>
-                        <td style={{ fontSize: '0.8125rem', color: '#64748b' }}>{formatDate(p.tanggal)}</td>
-                        <td>
+                        <td data-label="Estimasi Alsintan" style={{ fontSize: '0.8125rem' }}>{p.estimasiKebutuhan || '-'}</td>
+                        <td data-label="Tanggal" style={{ fontSize: '0.8125rem', color: '#64748b' }}>{formatDate(p.tanggal)}</td>
+                        <td data-label="Status">
                           <span className={`badge ${statusInfo.badge}`}>
                             {statusInfo.label}
                           </span>
                         </td>
-                        <td style={{ textAlign: 'right' }}>
+                        <td data-label="Aksi" style={{ textAlign: 'right' }}>
                           <Link
                             to={`/survey?prospekId=${p.idProspek}`}
                             className="btn btn-secondary btn-sm"

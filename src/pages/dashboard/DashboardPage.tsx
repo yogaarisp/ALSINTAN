@@ -242,7 +242,7 @@ export default function DashboardPage() {
           <h1
             style={{
               fontSize: '1.625rem',
-              fontWeight: 800,
+              fontWeight: 700,
               color: '#0f172a',
               letterSpacing: '-0.02em',
               lineHeight: 1.25,
@@ -294,7 +294,7 @@ export default function DashboardPage() {
               <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#64748b' }}>
                 Total Kecamatan
               </span>
-              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', marginTop: 6, letterSpacing: '-0.02em' }}>
+              <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#111827', marginTop: 6, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
                 {isLoading ? <div className="skeleton" style={{ height: 32, width: 60 }} /> : kpi?.totalKecamatan || 16}
               </div>
             </div>
@@ -329,7 +329,7 @@ export default function DashboardPage() {
               <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#64748b' }}>
                 Total Gapoktan
               </span>
-              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', marginTop: 6, letterSpacing: '-0.02em' }}>
+              <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#111827', marginTop: 6, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
                 {isLoading ? <div className="skeleton" style={{ height: 32, width: 80 }} /> : formatNumber(kpi?.totalGapoktan || 0)}
               </div>
             </div>
@@ -364,7 +364,7 @@ export default function DashboardPage() {
               <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#64748b' }}>
                 Total Luas Lahan
               </span>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', marginTop: 6, letterSpacing: '-0.02em' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#111827', marginTop: 6, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
                 {isLoading ? <div className="skeleton" style={{ height: 32, width: 110 }} /> : formatHektar(kpi?.totalLuasLahan || 0)}
               </div>
             </div>
@@ -399,7 +399,7 @@ export default function DashboardPage() {
               <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#64748b' }}>
                 Prospek Aktif
               </span>
-              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', marginTop: 6, letterSpacing: '-0.02em' }}>
+              <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#111827', marginTop: 6, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
                 {isLoading ? <div className="skeleton" style={{ height: 32, width: 50 }} /> : kpi?.prospekBaru || 0}
               </div>
             </div>
@@ -434,7 +434,7 @@ export default function DashboardPage() {
               <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#64748b' }}>
                 AO Lapangan
               </span>
-              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', marginTop: 6, letterSpacing: '-0.02em' }}>
+              <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#111827', marginTop: 6, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
                 {isLoading ? <div className="skeleton" style={{ height: 32, width: 50 }} /> : kpi?.aoAktif || 1}
               </div>
             </div>
@@ -574,8 +574,8 @@ export default function DashboardPage() {
                         <div
                           style={{
                             fontSize: '1.125rem',
-                            fontWeight: 700,
-                            color: '#0f172a',
+                            fontWeight: 600,
+                            color: '#334155',
                             letterSpacing: '-0.01em',
                           }}
                         >
@@ -776,7 +776,7 @@ export default function DashboardPage() {
                       pointerEvents: 'none',
                     }}
                   >
-                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
                       {totalProspekCount}
                     </div>
                     <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: 2 }}>
@@ -894,12 +894,12 @@ export default function DashboardPage() {
                   const statusInfo = getStatusProspekInfo(p.status)
                   return (
                     <tr key={p.idProspek}>
-                      <td style={{ fontSize: '0.8125rem', color: '#64748b', whiteSpace: 'nowrap' }}>
+                      <td data-label="Tanggal" style={{ fontSize: '0.8125rem', color: '#64748b', whiteSpace: 'nowrap' }}>
                         {formatDate(p.tanggal)}
                       </td>
-                      <td style={{ fontWeight: 600, color: '#0f172a' }}>{p.namaGapoktan}</td>
-                      <td style={{ color: '#334155' }}>{p.kecamatan}</td>
-                      <td>
+                      <td data-label="Gapoktan" style={{ fontWeight: 600, color: '#0f172a' }}>{p.namaGapoktan}</td>
+                      <td data-label="Kecamatan" style={{ color: '#334155' }}>{p.kecamatan}</td>
+                      <td data-label="Komoditas">
                         <span
                           className="badge"
                           style={{
@@ -912,11 +912,11 @@ export default function DashboardPage() {
                           {p.komoditas}
                         </span>
                       </td>
-                      <td style={{ color: '#475569' }}>{p.namaAO}</td>
-                      <td style={{ fontSize: '0.8125rem', color: '#334155' }}>
+                      <td data-label="AO Lapangan" style={{ color: '#475569' }}>{p.namaAO}</td>
+                      <td data-label="Estimasi Alsintan" style={{ fontSize: '0.8125rem', color: '#334155' }}>
                         {p.estimasiKebutuhan || '-'}
                       </td>
-                      <td>
+                      <td data-label="Status">
                         <span className={`badge ${statusInfo.badge}`}>
                           {statusInfo.label}
                         </span>

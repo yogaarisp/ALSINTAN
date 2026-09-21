@@ -448,20 +448,20 @@ export default function SurveyPage() {
                   const statusInfo = getStatusSurveyInfo(s.status as StatusSurvey)
                   return (
                     <tr key={s.idSurvey}>
-                      <td style={{ fontSize: '0.8125rem', color: '#64748b' }}>
+                      <td data-label="Waktu" style={{ fontSize: '0.8125rem', color: '#64748b' }}>
                         {formatDateTime(s.timestamp)}
                       </td>
-                      <td style={{ fontWeight: 700, color: '#0f172a' }}>
+                      <td data-label="Gapoktan" style={{ fontWeight: 700, color: '#0f172a' }}>
                         {s.namaGapoktan}
                       </td>
-                      <td>{s.jenisAlsintan || '-'}</td>
-                      <td>{s.estimasiHarga ? formatRupiah(s.estimasiHarga) : '-'}</td>
-                      <td>{s.luasSawah ? `${s.luasSawah} Ha` : '-'}</td>
-                      <td>{s.namaAO}</td>
-                      <td style={{ fontSize: '0.75rem', fontFamily: 'monospace' }}>
+                      <td data-label="Alsintan">{s.jenisAlsintan || '-'}</td>
+                      <td data-label="Estimasi Harga">{s.estimasiHarga ? formatRupiah(s.estimasiHarga) : '-'}</td>
+                      <td data-label="Luas Sawah">{s.luasSawah ? `${s.luasSawah} Ha` : '-'}</td>
+                      <td data-label="AO">{s.namaAO}</td>
+                      <td data-label="Koordinat GPS" style={{ fontSize: '0.75rem', fontFamily: 'monospace' }}>
                         {s.latitude ? `${s.latitude.toFixed(4)}, ${s.longitude?.toFixed(4)}` : '-'}
                       </td>
-                      <td>
+                      <td data-label="Status">
                         <span className={`badge ${statusInfo.badge}`}>
                           {statusInfo.label}
                         </span>

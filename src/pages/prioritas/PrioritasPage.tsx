@@ -224,19 +224,19 @@ export default function PrioritasPage() {
                   const levelInfo = getPriorityLevelInfo(item.level as PriorityLevel)
                   return (
                     <tr key={item.idKecamatan}>
-                      <td>
+                      <td data-label="Rank">
                         <span className={`rank-badge rank-${item.rank <= 3 ? item.rank : 'other'}`}>
                           {item.rank}
                         </span>
                       </td>
-                      <td>
+                      <td data-label="Kecamatan">
                         <div style={{ fontWeight: 700, color: '#0f172a' }}>Kec. {item.kecamatan}</div>
                         <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Kab. {item.kabupaten}</div>
                       </td>
-                      <td style={{ fontWeight: 500 }}>{formatHektar(item.luasLahan)}</td>
-                      <td>{item.jumlahGapoktan} unit</td>
-                      <td>{item.dataPanen ? `${formatNumber(item.dataPanen)} Ton` : '-'}</td>
-                      <td>
+                      <td data-label="Luas Lahan" style={{ fontWeight: 500 }}>{formatHektar(item.luasLahan)}</td>
+                      <td data-label="Gapoktan">{item.jumlahGapoktan} unit</td>
+                      <td data-label="Produksi">{item.dataPanen ? `${formatNumber(item.dataPanen)} Ton` : '-'}</td>
+                      <td data-label="Komoditas">
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                           {item.komoditas.map((k) => (
                             <span key={k} className="badge" style={{ background: '#f8fafc', color: '#334155', borderColor: '#e2e8f0' }}>
@@ -245,7 +245,7 @@ export default function PrioritasPage() {
                           ))}
                         </div>
                       </td>
-                      <td>
+                      <td data-label="Priority Score">
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <span style={{ fontWeight: 800, fontSize: '0.9375rem' }} className={getScoreColor(item.score)}>
                             {item.score}
@@ -255,18 +255,18 @@ export default function PrioritasPage() {
                           </div>
                         </div>
                       </td>
-                      <td>
+                      <td data-label="Level Prioritas">
                         <span className={`badge ${levelInfo.badge}`}>
                           {levelInfo.label}
                         </span>
                       </td>
-                      <td>
+                      <td data-label="Pipeline AO">
                         <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: item.prospekCount > 0 ? '#16a34a' : '#94a3b8' }}>
                           {item.prospekCount} Prospek
                         </span>
                       </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
+                      <td data-label="Aksi" style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, flexWrap: 'wrap' }}>
                           <button
                             onClick={() => setSelectedResult(item)}
                             className="btn btn-secondary btn-sm"

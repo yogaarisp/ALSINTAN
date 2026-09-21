@@ -223,17 +223,17 @@ export default function MonitoringPage() {
                 ))
               ) : aoStats.map((ao) => (
                 <tr key={ao.idAO}>
-                  <td style={{ fontWeight: 700, color: '#0f172a' }}>{ao.namaAO}</td>
-                  <td style={{ fontSize: '0.8125rem' }}>{ao.wilayah?.join(', ')}</td>
-                  <td>
+                  <td data-label="Nama AO" style={{ fontWeight: 700, color: '#0f172a' }}>{ao.namaAO}</td>
+                  <td data-label="Wilayah Penugasan" style={{ fontSize: '0.8125rem' }}>{ao.wilayah?.join(', ')}</td>
+                  <td data-label="Status AO">
                     <span className="badge" style={{ background: '#f0fdf4', color: '#16a34a', borderColor: '#bbf7d0' }}>
                       {ao.status}
                     </span>
                   </td>
-                  <td style={{ fontWeight: 600 }}>{ao.totalProspek}</td>
-                  <td>{ao.surveyCount}</td>
-                  <td style={{ fontWeight: 700, color: '#16a34a' }}>{ao.closingCount}</td>
-                  <td>
+                  <td data-label="Total Prospek" style={{ fontWeight: 600 }}>{ao.totalProspek}</td>
+                  <td data-label="Survey / Potensial">{ao.surveyCount}</td>
+                  <td data-label="Closing" style={{ fontWeight: 700, color: '#16a34a' }}>{ao.closingCount}</td>
+                  <td data-label="Conversion Rate">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ fontWeight: 600, fontSize: '0.8125rem' }}>{ao.conversionRate}%</span>
                       <div className="score-bar" style={{ width: 60 }}>

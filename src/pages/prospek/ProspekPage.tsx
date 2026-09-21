@@ -236,32 +236,32 @@ export default function ProspekPage() {
                   const statusInfo = getStatusProspekInfo(p.status as StatusProspek)
                   return (
                     <tr key={p.idProspek}>
-                      <td style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#94a3b8' }}>
+                      <td data-label="ID" style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#94a3b8' }}>
                         {p.idProspek}
                       </td>
-                      <td style={{ fontWeight: 700, color: '#0f172a' }}>
+                      <td data-label="Gapoktan" style={{ fontWeight: 700, color: '#0f172a' }}>
                         {p.namaGapoktan}
                       </td>
-                      <td>Kec. {p.kecamatan}</td>
-                      <td>
+                      <td data-label="Kecamatan">Kec. {p.kecamatan}</td>
+                      <td data-label="Komoditas">
                         <span className="badge" style={{ background: '#f0fdf4', color: '#16a34a', borderColor: '#bbf7d0' }}>
                           {p.komoditas}
                         </span>
                       </td>
-                      <td>
+                      <td data-label="AO Penanggung Jawab">
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <User size={14} color="#64748b" />
                           <span>{p.namaAO}</span>
                         </div>
                       </td>
-                      <td style={{ fontSize: '0.8125rem' }}>{p.estimasiKebutuhan || '-'}</td>
-                      <td style={{ fontSize: '0.8125rem', color: '#64748b' }}>{formatDate(p.tanggal)}</td>
-                      <td>
+                      <td data-label="Estimasi Alsintan" style={{ fontSize: '0.8125rem' }}>{p.estimasiKebutuhan || '-'}</td>
+                      <td data-label="Tanggal" style={{ fontSize: '0.8125rem', color: '#64748b' }}>{formatDate(p.tanggal)}</td>
+                      <td data-label="Status">
                         <span className={`badge ${statusInfo.badge}`}>
                           {statusInfo.label}
                         </span>
                       </td>
-                      <td style={{ textAlign: 'right' }}>
+                      <td data-label="Aksi" style={{ textAlign: 'right' }}>
                         <button
                           onClick={() => setSelectedProspek(p)}
                           className="btn btn-secondary btn-sm"
