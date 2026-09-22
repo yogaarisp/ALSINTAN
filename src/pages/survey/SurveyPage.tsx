@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
@@ -16,14 +16,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getProspek } from '@/lib/api/prospek'
 import { createSurvey, getSurvey } from '@/lib/api/survey'
 import { useAuth } from '@/lib/auth/auth-context'
-import { formatRupiah, formatDateTime, getStatusSurveyInfo } from '@/lib/utils'
+import { formatRupiah, formatNumber, formatDateTime, getStatusSurveyInfo } from '@/lib/utils'
 import type { StatusSurvey } from '@/lib/types'
 
 const surveySchema = z.object({
   idProspek: z.string().min(1, 'Pilih data prospek / gapoktan'),
   namaGapoktan: z.string().min(3, 'Nama Gapoktan harus diisi'),
   jumlahAnggota: z.number().min(1, 'Jumlah anggota minimal 1'),
-  luasSawah: z.number().min(0.1, 'Luas sawah minimal 0.1 Ha'),
+  luasSawah: z.number().min(0.1, 'Luas lahan minimal 0.1 Ha'),
   jenisAlsintan: z.string().min(2, 'Jenis alsintan harus diisi'),
   estimasiHarga: z.number().min(0, 'Estimasi harga tidak boleh negatif'),
   catatan: z.string().optional(),
@@ -75,6 +75,7 @@ export default function SurveyPage() {
   const {
     register,
     handleSubmit,
+    control,
     setValue,
     reset,
     formState: { errors, isSubmitting },
@@ -168,7 +169,7 @@ export default function SurveyPage() {
           <div>
             <h1 className="page-title">Form Survey Lapangan</h1>
             <p className="page-subtitle">
-              Pencatatan data aktual kondisi lapangan, verifikasi luas sawah, dan kebutuhan alsintan Gapoktan
+              Pencatatan data aktual kondisi lapangan, verifikasi luas lahan, dan kebutuhan alsintan Gapoktan
             </p>
           </div>
           {/* Bridge option (Google Form) per PRD Section 6G */}
@@ -265,7 +266,7 @@ export default function SurveyPage() {
                   {errors.jumlahAnggota && <p className="input-error">{errors.jumlahAnggota.message}</p>}
                 </div>
                 <div>
-                  <label className="input-label">Luas Sawah Aktual (Ha)</label>
+                  <label className="input-label">Luas Lahan (Ha)</label>
                   <input
                     type="number"
                     step="0.1"
@@ -291,11 +292,22 @@ export default function SurveyPage() {
                 </div>
                 <div>
                   <label className="input-label">Estimasi Nilai / Harga (Rp)</label>
-                  <input
-                    type="number"
-                    placeholder="Contoh: 500000000"
-                    className={`input ${errors.estimasiHarga ? 'error' : ''}`}
-                    {...register('estimasiHarga', { valueAsNumber: true })}
+                  <Controller
+                    name="estimasiHarga"
+                    control={control}
+                    render={({ field }) => (
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="Contoh: 500.000.000"
+                        className={`input ${errors.estimasiHarga ? 'error' : ''}`}
+                        value={field.value ? formatNumber(field.value) : ''}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, '')
+                          field.onChange(digits ? Number(digits) : 0)
+                        }}
+                      />
+                    )}
                   />
                   {errors.estimasiHarga && <p className="input-error">{errors.estimasiHarga.message}</p>}
                 </div>
@@ -424,7 +436,7 @@ export default function SurveyPage() {
                   <th>Gapoktan</th>
                   <th>Alsintan</th>
                   <th>Estimasi Harga</th>
-                  <th>Luas Sawah</th>
+                  <th>Luas Lahan</th>
                   <th>AO</th>
                   <th>Koordinat GPS</th>
                   <th>Status</th>
