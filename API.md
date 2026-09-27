@@ -188,7 +188,7 @@ memilih gapoktan sesuai kecamatan).
 - **Query Params**:
   | Param | Keterangan |
   |---|---|
-  | `kecamatan` | Nama kecamatan. Tanpa param = seluruh 16 kecamatan (±3.242 poktan). Cocokkan tidak membedakan huruf besar/kecil (`PURWODADI` = `Purwodadi`) |
+  | `kecamatan` | Nama kecamatan. Tanpa param = seluruh 16 kecamatan (3.242 poktan). Cocokkan tidak membedakan huruf besar/kecil (`PURWODADI` = `Purwodadi`) |
   | `q` | Pencarian di nama poktan / desa / ketua / alamat / ID Poktan |
   | `page`, `limit` | Default `limit` 500, max 1000 |
   | `idPoktan` | Lookup satu poktan; mengembalikan objek tunggal (bukan daftar) |
@@ -199,12 +199,12 @@ memilih gapoktan sesuai kecamatan).
   "data": {
     "items": [
       {
-        "idPoktan": "5107401",
-        "namaPoktan": "Ternak Prima Depok Farm",
-        "jumlahAnggota": 24,
-        "desa": "KALIJERING",
-        "ketua": "Sudirman",
-        "alamat": "RT 02 RW 01, Desa Kalijering",
+        "idPoktan": "5105498",
+        "namaPoktan": "Berkah Tani Milenial",
+        "jumlahAnggota": 9,
+        "desa": "GIRIGONDO",
+        "ketua": "Eko Retno Purwanto",
+        "alamat": "Dusun Kaligoro RT 02 RW 05",
         "kecamatan": "Pituruh"
       }
     ],
@@ -231,3 +231,10 @@ memilih gapoktan sesuai kecamatan).
   `ID_PROSPEK` pada `DATA_PROSPEK` boleh berisi ID Poktan numerik
   (mis. `5107401`) — `nextId` sudah difilter berdasarkan prefix agar nomor urut
   `P001`, `P002`, ... tidak tergeser.
+- **Jalur baca cadangan (frontend):** kalau `getPoktan` belum ada di deployment
+  aktif, `src/lib/api/poktan.ts` otomatis jatuh ke action `getSourceData`
+  (`key=poktan&tab=<KECAMATAN>&limit=2000`) yang sudah ada sejak awal, lalu
+  membersihkan sel di sisi klien. `getSheetByName()` tidak membedakan huruf
+  besar/kecil, jadi `tab=PITURUH` tetap ketemu tab `Pituruh`. Hasil fallback
+  disimpan ke localStorage dengan bentuk identik, jadi transparan bagi UI.
+  Konsekuensinya: tidak ada cache di GAS (lebih lambat, ±3 detik per kecamatan).
