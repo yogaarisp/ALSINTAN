@@ -213,6 +213,27 @@ export interface PaginatedResponse<T> {
 }
 
 // ─────────────────────────────────────────
+// MASTER POKTAN (spreadsheet "Poktan 2026")
+// Daftar kelompok tani per kecamatan — 16 tab, ±3.243 baris.
+// Berbeda dengan DATA_PROSPEK: ini master acuan, bukan hasil kerja Analis.
+// ─────────────────────────────────────────
+export interface MasterPoktan {
+  idPoktan: string
+  namaPoktan: string
+  jumlahAnggota: number
+  desa: string
+  ketua: string
+  alamat: string
+  kecamatan: string
+}
+
+export interface PoktanResponse extends PaginatedResponse<MasterPoktan> {
+  /** Nama tab (= nama kecamatan) yang tersedia di Poktan 2026 */
+  kecamatan: string[]
+  updatedAt?: string
+}
+
+// ─────────────────────────────────────────
 // FILTER & QUERY PARAMS
 // ─────────────────────────────────────────
 export interface WilayahFilter {
@@ -231,6 +252,13 @@ export interface ProspekFilter {
   dateFrom?: string
   dateTo?: string
   search?: string
+  page?: number
+  limit?: number
+}
+
+export interface PoktanFilter {
+  kecamatan?: string
+  q?: string
   page?: number
   limit?: number
 }

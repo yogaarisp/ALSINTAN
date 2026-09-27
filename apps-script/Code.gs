@@ -6,7 +6,7 @@
  *         Execute as: Me | Who has access: Anyone
  *
  * Kontrak API: lihat API.md (response wrapper { success, data, error, timestamp })
- * Action GET  : ping, getDashboardKPI, getWilayah, getProspek, getAnalis, getSurvey
+ * Action GET  : ping, getDashboardKPI, getWilayah, getProspek, getAnalis, getSurvey, getPoktan
  * Action POST : createProspek, createSurvey, createAnalis, updateAnalisStatus, authCheck
  * Catatan POST: frontend mengirim Content-Type text/plain (hindari preflight CORS)
  */
@@ -66,6 +66,7 @@ function handle(p) {
       case 'getAnalis': data = apiGetAnalis(); break;
       case 'getSources': data = apiGetSources(); break;
       case 'getSourceData': data = apiGetSourceData(p); break;
+      case 'getPoktan': data = apiGetPoktan(p); break;
       case 'createProspek': data = apiCreateProspek(p); break;
       case 'createSurvey': data = apiCreateSurvey(p); break;
       case 'createAnalis': data = apiCreateAnalis(p); break;
@@ -198,7 +199,12 @@ function nextId(sheetName, idColumn, prefix) {
   var rows = readRows(sheetName);
   var max = 0;
   rows.forEach(function (r) {
-    var m = String(r[idColumn] || '').match(/(\d+)\s*$/);
+    var v = str(r[idColumn]);
+    // Hanya ID dengan prefix yang sama yang ikut dihitung. Kolom ID_PROSPEK
+    // juga berisi ID Poktan numerik (mis. 5098431) dari Master Poktan 2026 dan
+    // itu tidak boleh menggeser nomor urut P001, P002, ...
+    if (prefix && v.toUpperCase().indexOf(String(prefix).toUpperCase()) !== 0) return;
+    var m = v.match(/(\d+)\s*$/);
     if (m) max = Math.max(max, parseInt(m[1], 10));
   });
   var n = max + 1;
@@ -442,9 +448,38 @@ function apiCreateProspek(p) {
   return mapProspek(obj);
 }
 
+// Form survey mengirim idProspek berupa ID Poktan dari Master Poktan 2026
+// (mis. 5098431). Kalau poktan itu belum punya baris di DATA_PROSPEK, buat
+// otomatis supaya KPI, monitoring, dan hitungan "prospek per Analis" ikut
+// terhitung. Idempoten: baris kedua untuk poktan yang sama memakai ID yang sama.
+function ensureProspekDariPoktan(pok, p) {
+  var idAnalis = str(p.idAnalis) || 'AN001';
+  var analis = readRows(SHEETS.ANALIS).map(mapAnalis).filter(function (a) { return a.idAnalis === idAnalis; })[0];
+  var wil = wilayahByNama(pok.kecamatan);
+  var obj = {
+    'ID_PROSPEK': pok.idPoktan,
+    'ID_KECAMATAN': wil ? wil.idKecamatan : '',
+    'KECAMATAN': wil ? wil.kecamatan : str(pok.kecamatan).toUpperCase(),
+    'NAMA_GAPOKTAN': pok.namaPoktan,
+    'KOMODITAS': 'Padi',
+    'ID_ANALIS': idAnalis,
+    'NAMA_ANALIS': analis ? analis.namaAnalis : str(p.namaAnalis) || 'Budi Santoso',
+    'STATUS': 'BARU',
+    'TANGGAL': str(p.tanggal) || Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'),
+    'ESTIMASI_ALSINTAN': str(p.jenisAlsintan),
+    'CATATAN': 'Master Poktan 2026 · ID Poktan ' + pok.idPoktan + (pok.desa ? ' · Desa ' + pok.desa : ''),
+  };
+  appendRow(SHEETS.PROSPEK, Object.keys(obj), obj);
+  return mapProspek(obj);
+}
+
 function apiCreateSurvey(p) {
   if (!str(p.idProspek)) throw new Error('idProspek wajib diisi');
   var prosp = apiGetProspek({ idProspek: str(p.idProspek) });
+  if (!prosp) {
+    var pok = lookupPoktan(str(p.idProspek));
+    if (pok) prosp = ensureProspekDariPoktan(pok, p);
+  }
   if (!prosp) throw new Error('idProspek tidak dikenal: ' + str(p.idProspek));
   var idSurvey = nextId(SHEETS.SURVEY, 'ID_SURVEY', 'S');
   var fotoUrl = '';
@@ -617,6 +652,209 @@ function apiGetSourceData(p) {
     totalPages: Math.ceil(total / limit) || 1,
     updatedAt: new Date().toISOString(),
   };
+}
+
+// ----------------------------------------------------------- master poktan
+// Sumber: spreadsheet "Poktan 2026" (SOURCES key 'poktan') — 16 tab, satu per
+// kecamatan, total ±3.243 kelompok tani. Struktur tiap tab:
+//   baris 1 = judul ("List Kelompok Tani ...")
+//   baris 2 = header (No | Nama Poktan | ID Poktan | Jumlah Anggota | Nama Desa |
+//                    Nama Ketua | Alamat Sekretariat)
+//   baris 3+ = data
+// Sel "Nama Poktan" tidak bersih: nama poktan di awal sel, disusul label UI
+// eksportir ("Tambah Anggota", "Ubah", "Hapus", ...) setelah rentetan spasi
+// panjang — karena itu nama diambil dari segmen pertama saja.
+var POKTAN_CACHE_TABS = 'poktan2026:tabs';
+var POKTAN_CACHE_PREFIX = 'poktan2026:tab:';
+var POKTAN_CACHE_TTL = 21600; // 6 jam
+
+// Sel "Nama Poktan" tidak bersih: nama poktan berada di awal sel, disusul
+// label UI eksportir ("Tambah Anggota", "Komoditas yang diusahakan", "Ubah",
+// "Hapus", ...) yang dipisahkan oleh rentetan spasi panjang.
+function namaPoktanDari(v) {
+  var segmen = str(v).split(/[\r\n]+|\s{2,}/);
+  for (var i = 0; i < segmen.length; i++) {
+    if (str(segmen[i])) return str(segmen[i]);
+  }
+  return '';
+}
+
+// Rapatkan spasi/newline berlebih tanpa memotong isi (dipakai untuk alamat)
+function rapikanTeks(v) {
+  return str(v).replace(/\s+/g, ' ');
+}
+
+function intOr0(v) {
+  var n = num(v);
+  return n === null ? 0 : Math.round(n);
+}
+
+function poktanBook() {
+  var src = null;
+  SOURCES.forEach(function (s) { if (s.key === 'poktan') src = s; });
+  if (!src) throw new Error('Sumber data poktan tidak terdaftar di SOURCES');
+  return SpreadsheetApp.openById(src.id);
+}
+
+function poktanTabNames() {
+  var cache = CacheService.getScriptCache();
+  var hit = cache.get(POKTAN_CACHE_TABS);
+  if (hit) {
+    try {
+      return JSON.parse(hit);
+    } catch (e) { /* cache rusak -> baca ulang dari spreadsheet */ }
+  }
+  var names = poktanBook()
+    .getSheets()
+    .map(function (s) { return str(s.getName()); })
+    .filter(function (n) { return n !== ''; });
+  try {
+    cache.put(POKTAN_CACHE_TABS, JSON.stringify(names), POKTAN_CACHE_TTL);
+  } catch (e) { /* cache penuh -> baca ulang spreadsheet */ }
+  return names;
+}
+
+// Nama tab di Poktan 2026 (Title Case) dicocokkan case-insensitive karena
+// MASTER_WILAYAH menyimpan nama kecamatan dalam huruf kapital.
+function matchPoktanTab(names, wanted) {
+  var target = str(wanted).toLowerCase();
+  if (!target) return '';
+  for (var i = 0; i < names.length; i++) {
+    if (String(names[i]).toLowerCase() === target) return names[i];
+  }
+  return '';
+}
+
+// CacheService membatasi 100KB per key, jadi tiap tab disimpan sebagai array
+// ringkas, bukan objek.
+function poktanToCacheRow(p) {
+  return [p.idPoktan, p.namaPoktan, p.jumlahAnggota, p.desa, p.ketua, p.alamat, p.kecamatan];
+}
+
+function poktanFromCacheRow(r) {
+  return {
+    idPoktan: str(r[0]),
+    namaPoktan: str(r[1]),
+    jumlahAnggota: num(r[2]) || 0,
+    desa: str(r[3]),
+    ketua: str(r[4]),
+    alamat: str(r[5]),
+    kecamatan: str(r[6]),
+  };
+}
+
+function readPoktanSheet(sheet, kec) {
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
+  if (!lastRow || lastCol < 3) return [];
+  var values = sheet.getRange(1, 1, lastRow, Math.min(lastCol, 12)).getValues();
+  // Baris header = baris pertama dengan >= 3 sel terisi (baris judul cuma 1-2 sel)
+  var headerIdx = 0;
+  for (var h = 0; h < Math.min(values.length, 10); h++) {
+    var filled = 0;
+    for (var c = 0; c < values[h].length; c++) if (str(values[h][c]) !== '') filled++;
+    if (filled >= 3) { headerIdx = h; break; }
+  }
+  var out = [];
+  for (var i = headerIdx + 1; i < values.length; i++) {
+    var row = values[i];
+    var nama = namaPoktanDari(row[1]);
+    var idNum = num(row[2]);
+    if (!nama || idNum === null) continue; // baris tanpa nama atau tanpa ID Poktan
+    out.push({
+      idPoktan: String(Math.round(idNum)),
+      namaPoktan: nama,
+      jumlahAnggota: intOr0(row[3]),
+      desa: rapikanTeks(row[4]),
+      ketua: rapikanTeks(row[5]),
+      alamat: rapikanTeks(row[6]),
+      kecamatan: kec,
+    });
+  }
+  return out;
+}
+
+function loadPoktanTab(kec) {
+  var cache = CacheService.getScriptCache();
+  var key = POKTAN_CACHE_PREFIX + str(kec).toLowerCase();
+  var hit = cache.get(key);
+  if (hit) {
+    try {
+      return JSON.parse(hit).map(poktanFromCacheRow);
+    } catch (e) { /* cache rusak -> baca ulang dari spreadsheet */ }
+  }
+  var sheet = poktanBook().getSheetByName(kec);
+  var rows = sheet ? readPoktanSheet(sheet, kec) : [];
+  try {
+    // CacheService menolak payload > 100KB. Kalau satu tab terlalu besar, data
+    // tetap dikembalikan (hanya tidak di-cache) daripada gagal total.
+    cache.put(key, JSON.stringify(rows.map(poktanToCacheRow)), POKTAN_CACHE_TTL);
+  } catch (e) { /* cache penuh -> baca ulang spreadsheet */ }
+  return rows;
+}
+
+function loadPoktan(tabs) {
+  var out = [];
+  for (var i = 0; i < tabs.length; i++) out = out.concat(loadPoktanTab(tabs[i]));
+  return out;
+}
+
+function apiGetPoktan(p) {
+  var names = poktanTabNames();
+  var tabs = names;
+  var kec = str(p.kecamatan);
+  if (kec) {
+    var tab = matchPoktanTab(names, kec);
+    if (!tab) throw new Error('Kecamatan tidak ada di Master Poktan 2026: ' + kec);
+    tabs = [tab];
+  }
+  if (p.idPoktan) {
+    var id = str(p.idPoktan);
+    return loadPoktan(tabs).filter(function (x) { return x.idPoktan === id; })[0] || null;
+  }
+  var data = loadPoktan(tabs);
+  var q = str(p.q).toLowerCase();
+  if (q) {
+    data = data.filter(function (x) {
+      return (
+        x.namaPoktan.toLowerCase().indexOf(q) >= 0 ||
+        x.desa.toLowerCase().indexOf(q) >= 0 ||
+        x.ketua.toLowerCase().indexOf(q) >= 0 ||
+        x.alamat.toLowerCase().indexOf(q) >= 0 ||
+        x.idPoktan.indexOf(q) >= 0
+      );
+    });
+  }
+  data.sort(function (a, b) {
+    return a.namaPoktan < b.namaPoktan ? -1 : a.namaPoktan > b.namaPoktan ? 1 : 0;
+  });
+  var page = Math.max(1, parseInt(p.page, 10) || 1);
+  var limit = parseInt(p.limit, 10);
+  if (!limit || limit < 1) limit = 500;
+  if (limit > 1000) limit = 1000;
+  return {
+    items: data.slice((page - 1) * limit, page * limit),
+    total: data.length,
+    page: page,
+    limit: limit,
+    totalPages: Math.ceil(data.length / limit) || 1,
+    kecamatan: names,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function lookupPoktan(idPoktan) {
+  if (!str(idPoktan)) return null;
+  return apiGetPoktan({ idPoktan: str(idPoktan) });
+}
+
+function wilayahByNama(nama) {
+  var target = str(nama).toLowerCase();
+  if (!target) return null;
+  var found = readRows(SHEETS.WILAYAH).map(mapWilayah).filter(function (w) {
+    return w.kecamatan.toLowerCase() === target;
+  })[0];
+  return found || null;
 }
 
 function apiUpdateAnalisStatus(p) {

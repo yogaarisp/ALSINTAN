@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
@@ -11,16 +11,21 @@ import {
   CheckCircle2,
   ExternalLink,
   Sparkles,
+  Search,
+  Users,
 } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getProspek } from '@/lib/api/prospek'
+import { getPoktan } from '@/lib/api/poktan'
+import { getWilayah } from '@/lib/api/wilayah'
 import { createSurvey, getSurvey } from '@/lib/api/survey'
 import { useAuth } from '@/lib/auth/auth-context'
 import { formatRupiah, formatNumber, formatDateTime, getStatusSurveyInfo } from '@/lib/utils'
-import type { StatusSurvey } from '@/lib/types'
+import type { MasterPoktan, StatusSurvey } from '@/lib/types'
 
 const surveySchema = z.object({
-  idProspek: z.string().min(1, 'Pilih data prospek / gapoktan'),
+  kecamatan: z.string().min(2, 'Pilih kecamatan terlebih dahulu'),
+  idProspek: z.string().min(1, 'Pilih kelompok tani (gapoktan)'),
   namaGapoktan: z.string().min(3, 'Nama Gapoktan harus diisi'),
   jumlahAnggota: z.number().min(1, 'Jumlah anggota minimal 1'),
   luasSawah: z.number().min(0.1, 'Luas lahan minimal 0.1 Ha'),
@@ -41,6 +46,10 @@ export default function SurveyPage() {
   const [isGettingGps, setIsGettingGps] = useState(false)
   const [foto, setFoto] = useState<{ base64: string; name: string; preview: string } | null>(null)
   const [activeTab, setActiveTab] = useState<'form' | 'history'>('form')
+  // Master Poktan 2026: pilih kecamatan dulu, lalu kelompok tani di dalamnya
+  const [kecamatan, setKecamatan] = useState('')
+  const [cariPoktan, setCariPoktan] = useState('')
+  const [dipilih, setDipilih] = useState<MasterPoktan | null>(null)
 
   const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -66,6 +75,21 @@ export default function SurveyPage() {
     queryFn: () => getProspek({ limit: 100 }),
   })
 
+  // Master wilayah — sumber daftar kecamatan (16 kecamatan Purworejo)
+  const { data: wilayahData } = useQuery({
+    queryKey: ['wilayah'],
+    queryFn: () => getWilayah(),
+    staleTime: 24 * 60 * 60 * 1000,
+  })
+
+  // Kelompok tani per kecamatan — diambil saat kecamatan dipilih (maks. ±311 baris)
+  const { data: poktanData, isLoading: loadingPoktan } = useQuery({
+    queryKey: ['poktan', kecamatan],
+    queryFn: () => getPoktan({ kecamatan, limit: 1000 }),
+    enabled: kecamatan !== '',
+    staleTime: 60 * 60 * 1000,
+  })
+
   const { data: surveyData, isLoading: loadingSurvey } = useQuery({
     queryKey: ['survey'],
     queryFn: () => getSurvey({ limit: 100 }),
@@ -82,6 +106,7 @@ export default function SurveyPage() {
   } = useForm<SurveyFormData>({
     resolver: zodResolver(surveySchema),
     defaultValues: {
+      kecamatan: '',
       idProspek: initialProspekId,
       namaGapoktan: prospekData?.items.find((p) => p.idProspek === initialProspekId)?.namaGapoktan || '',
       jumlahAnggota: 30,
@@ -117,13 +142,59 @@ export default function SurveyPage() {
     )
   }
 
-  const handleSelectProspek = (id: string) => {
-    setValue('idProspek', id)
-    const selected = prospekData?.items.find((p) => p.idProspek === id)
+  const idProspekTerpilih = useWatch({ control, name: 'idProspek' })
+
+  // Master Poktan 2026 yang cocok dengan pencarian di dalam kecamatan terpilih
+  const poktanTerfilter = useMemo(() => {
+    const list = poktanData?.items ?? []
+    const q = cariPoktan.trim().toLowerCase()
+    if (!q) return list
+    return list.filter(
+      (p) =>
+        p.namaPoktan.toLowerCase().includes(q) ||
+        p.desa.toLowerCase().includes(q) ||
+        p.ketua.toLowerCase().includes(q) ||
+        p.idPoktan.includes(q),
+    )
+  }, [poktanData, cariPoktan])
+
+  // Detail kelompok tani terpilih (kartu info di bawah dropdown)
+  useEffect(() => {
+    const found = (poktanData?.items ?? []).find((p) => p.idPoktan === idProspekTerpilih)
+    setDipilih(found ?? null)
+  }, [idProspekTerpilih, poktanData])
+
+  // Deep-link dari halaman Prospek/Analis (?prospekId=P001) — isi kecamatan
+  // dari prospek tersebut supaya langsung bisa dipilih gapoktannya.
+  useEffect(() => {
+    if (kecamatan) return
+    const asal = prospekData?.items.find((p) => p.idProspek === initialProspekId)
+    if (asal?.kecamatan) {
+      setKecamatan(asal.kecamatan)
+      setValue('kecamatan', asal.kecamatan)
+    }
+  }, [kecamatan, initialProspekId, prospekData, setValue])
+
+  const handleSelectKecamatan = (nama: string) => {
+    setKecamatan(nama)
+    setValue('kecamatan', nama, { shouldValidate: true })
+    // Ganti kecamatan = pilihan kelompok tani tidak berlaku lagi
+    setCariPoktan('')
+    if (idProspekTerpilih) {
+      setValue('idProspek', '', { shouldValidate: true })
+      setValue('namaGapoktan', '', { shouldValidate: true })
+      setValue('jumlahAnggota', 30)
+    }
+  }
+
+  const handleSelectPoktan = (id: string) => {
+    setValue('idProspek', id, { shouldValidate: true })
+    const selected = (poktanData?.items ?? []).find((p) => p.idPoktan === id)
     if (selected) {
-      setValue('namaGapoktan', selected.namaGapoktan)
-      if (selected.estimasiKebutuhan) {
-        setValue('jenisAlsintan', selected.estimasiKebutuhan)
+      setValue('namaGapoktan', selected.namaPoktan, { shouldValidate: true })
+      // Sebagian poktan di master memang tercatat 0 anggota — isi manual
+      if (selected.jumlahAnggota > 0) {
+        setValue('jumlahAnggota', selected.jumlahAnggota, { shouldValidate: true })
       }
     }
   }
@@ -146,10 +217,20 @@ export default function SurveyPage() {
       ...(foto ? { fotoBase64: foto.base64, fotoName: foto.name } : {}),
     })
     await queryClient.invalidateQueries({ queryKey: ['survey'] })
+    // Survey pertama untuk sebuah poktan juga mendaftarkannya ke DATA_PROSPEK
+    await queryClient.invalidateQueries({ queryKey: ['prospek'] })
     toast.success(`Data survey untuk ${data.namaGapoktan} tersimpan ke Spreadsheet!`)
     reset()
+    // reset() mengembalikan defaultValues (bisa berisi ?prospekId) — kosongkan
+    // juga kolom referensi karena dropdown di bawah sudah dikosongkan
+    setValue('kecamatan', '')
+    setValue('idProspek', '')
+    setValue('namaGapoktan', '')
     setGpsLocation(null)
     setFoto(null)
+    setKecamatan('')
+    setCariPoktan('')
+    setDipilih(null)
     setActiveTab('history')
   }
 
@@ -223,22 +304,110 @@ export default function SurveyPage() {
         <div className="card">
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-              {/* Reference Prospek */}
-              <div>
-                <label className="input-label">Pilih Data Prospek Terkait</label>
-                <select
-                  className={`input ${errors.idProspek ? 'error' : ''}`}
-                  {...register('idProspek')}
-                  onChange={(e) => handleSelectProspek(e.target.value)}
-                >
-                  <option value="">-- Pilih Prospek --</option>
-                  {prospekData?.items.map((p) => (
-                    <option key={p.idProspek} value={p.idProspek}>
-                      {p.namaGapoktan} (Kec. {p.kecamatan}) — {p.komoditas}
-                    </option>
-                  ))}
-                </select>
-                {errors.idProspek && <p className="input-error">{errors.idProspek.message}</p>}
+              {/* Reference Gapoktan — Master Poktan 2026 per kecamatan */}
+              <div style={{ padding: 14, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                  <Users size={15} color="#16a34a" />
+                  <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#15803d' }}>
+                    Data Kelompok Tani — Master Poktan 2026
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+                  <div>
+                    <label className="input-label">1. Kecamatan</label>
+                    <select
+                      className={`input ${errors.kecamatan ? 'error' : ''}`}
+                      value={kecamatan}
+                      onChange={(e) => handleSelectKecamatan(e.target.value)}
+                    >
+                      <option value="">-- Pilih Kecamatan --</option>
+                      {(wilayahData ?? []).map((w) => (
+                        <option key={w.idKecamatan} value={w.kecamatan}>
+                          {w.kecamatan} ({w.jumlahGapoktan} poktan)
+                        </option>
+                      ))}
+                    </select>
+                    {errors.kecamatan && <p className="input-error">{errors.kecamatan.message}</p>}
+                  </div>
+
+                  <div>
+                    <label className="input-label">2. Kelompok Tani / Gapoktan</label>
+                    {!kecamatan ? (
+                      <div className="input" style={{ color: '#94a3b8', display: 'flex', alignItems: 'center' }}>
+                        Pilih kecamatan lebih dulu
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ position: 'relative', marginBottom: 6 }}>
+                          <Search
+                            size={14}
+                            color="#94a3b8"
+                            style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }}
+                          />
+                          <input
+                            type="text"
+                            className="input"
+                            style={{ paddingLeft: 30 }}
+                            placeholder="Cari nama poktan / desa / ketua..."
+                            value={cariPoktan}
+                            onChange={(e) => setCariPoktan(e.target.value)}
+                          />
+                        </div>
+                        <select
+                          className={`input ${errors.idProspek ? 'error' : ''}`}
+                          {...register('idProspek')}
+                          onChange={(e) => handleSelectPoktan(e.target.value)}
+                        >
+                          <option value="">
+                            {loadingPoktan ? '-- Memuat kelompok tani...' : '-- Pilih Kelompok Tani --'}
+                          </option>
+                          {initialProspekId && !poktanData?.items.some((p) => p.idPoktan === initialProspekId) && (
+                            <option value={initialProspekId}>
+                              {prospekData?.items.find((p) => p.idProspek === initialProspekId)?.namaGapoktan ?? initialProspekId}{' '}
+                              (dari daftar prospek — belum ada di Master Poktan 2026)
+                            </option>
+                          )}
+                          {poktanTerfilter.map((p) => (
+                            <option key={p.idPoktan} value={p.idPoktan}>
+                              {p.namaPoktan} — Desa {p.desa} ({p.jumlahAnggota} anggota)
+                            </option>
+                          ))}
+                        </select>
+                      </>
+                    )}
+                    {errors.idProspek && <p className="input-error">{errors.idProspek.message}</p>}
+                    {kecamatan && !loadingPoktan && poktanTerfilter.length === 0 && (
+                      <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 4 }}>
+                        {cariPoktan
+                          ? 'Tidak ada kelompok tani yang cocok dengan pencarian.'
+                          : 'Belum ada kelompok tani tercatat di kecamatan ini pada master 2026.'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {dipilih && (
+                  <div
+                    style={{
+                      marginTop: 12,
+                      padding: 10,
+                      background: '#fff',
+                      border: '1px solid #dcfce7',
+                      borderRadius: 10,
+                      fontSize: '0.8125rem',
+                      color: '#334155',
+                    }}
+                  >
+                    <strong style={{ color: '#0f172a' }}>{dipilih.namaPoktan}</strong> · ID Poktan {dipilih.idPoktan}
+                    <div style={{ marginTop: 2 }}>
+                      Desa {dipilih.desa || '-'} · Ketua {dipilih.ketua || '-'} · {formatNumber(dipilih.jumlahAnggota)} anggota
+                    </div>
+                    {dipilih.alamat && (
+                      <div style={{ marginTop: 2, fontSize: '0.75rem', color: '#64748b' }}>{dipilih.alamat}</div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Nama Gapoktan */}
