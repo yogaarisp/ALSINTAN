@@ -135,6 +135,7 @@ membuat file baru. Karena itu spreadsheet kosong harus dibuat manual sekali saja
 | Folder ALSINTAN lama | `10bMgDYu3U_DrvSfmj1myGotU9tLgZfAv` |
 | Deployment Apps Script lama | `AKfycbxK-PKATBd50DMufayNBqsi2cq2oFR3l1pYuD6DieYTnrI2N3WmtM241N7UF7UMAsathA` |
 | Deployment Apps Script BARU | `AKfycbzeej-375FCqhZcnAvBSsZoRXsJSib6jbLuPTt54jzksFTXne4q61JOaeijmSGJxAA` |
+| Deployment Apps Script AKHIR (rename AO → Analis, 2026-09-27) | `AKfycbwXJIoF-m9yU84rBS9jqwDH9h9FFQEvo5aZb3GkhMvc9Kstj_Nu4JQ85e78lsy_C_c` |
 
 Sistem lama masih jalan (terverifikasi 7/7 endpoint OK per 2026-09-27) —
 artinya migrasi ini **tidak mendesak**, bisa dikerjakan dengan tenang.
