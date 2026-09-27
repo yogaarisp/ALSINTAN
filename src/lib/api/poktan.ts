@@ -30,9 +30,15 @@ function cacheKey(filter?: PoktanFilter): string {
 
 const EMPTY: PoktanResponse = { items: [], total: 0, page: 1, limit: 0, totalPages: 1, kecamatan: [] }
 
-// Batas atas HARD_LIMIT: tab terbesar (Kaligesing) 299 baris, jadi 2000 aman
-// dan seluruh tab selalu muat dalam satu halaman.
+// Batas atas: tab terbesar (Kaligesing) 299 baris, jadi 2000 aman dan seluruh
+// tab selalu muat dalam satu halaman.
 const HARD_LIMIT = 2000
+
+// Diisi `true` begitu pertama kali Apps Script membalas "Unknown action:
+// getPoktan" — artinya deployment aktif masih yang lama. Sesi berikutnya langsung
+// ke jalur 2 tanpa membuang satu round-trip. Otomatis kembali ke jalur 1 setelah
+// page reload kalau `Code.gs` sudah di-deploy ulang.
+let getPoktanUnavailable = false
 
 /**
  * Daftar poktan. Tanpa `kecamatan` akan memuat seluruh 3.242 baris —
@@ -41,42 +47,60 @@ const HARD_LIMIT = 2000
 export async function getPoktan(filter?: PoktanFilter): Promise<PoktanResponse> {
   if (USE_MOCK) return EMPTY
 
-  try {
-    const res = await gasGet<PoktanResponse>('getPoktan', {
-      kecamatan: filter?.kecamatan,
-      q: filter?.q,
-      page: filter?.page,
-      limit: filter?.limit,
-    })
-    if (res && res.items) setLocalCache(cacheKey(filter), res)
-    return res
-  } catch (err) {
-    const cached = getLocalCache<PoktanResponse>(cacheKey(filter))
-    if (cached) return cached
-
-    // Jalur 2: `getPoktan` belum ada di deployment aktif (deployment lama).
-    // getSourceData hanya bisa dibaca per-kecamatan, jadi tanpa filter
-    // kecamatan tidak ada jalur cadangan.
-    if (isActionUnknown(err) && filter?.kecamatan) {
-      const viaSumber = await getPoktanViaSourceData(filter)
-      setLocalCache(cacheKey(filter), viaSumber)
-      return viaSumber
+  if (!getPoktanUnavailable) {
+    try {
+      const res = await gasGet<PoktanResponse>('getPoktan', {
+        kecamatan: filter?.kecamatan,
+        q: filter?.q,
+        page: filter?.page,
+        limit: filter?.limit,
+      })
+      if (res && res.items) setLocalCache(cacheKey(filter), res)
+      return res
+    } catch (err) {
+      if (isActionUnknown(err)) {
+        getPoktanUnavailable = true
+        console.warn(
+          '[poktan] Action getPoktan belum ada di deployment Apps Script aktif — ' +
+            'memakai getSourceData sebagai cadangan. Deploy ulang Code.gs untuk mengaktifkan jalur cepat.',
+        )
+      } else {
+        const cached = getLocalCache<PoktanResponse>(cacheKey(filter))
+        if (cached) return cached
+        throw err
+      }
     }
-    throw err
   }
+
+  const cached = getLocalCache<PoktanResponse>(cacheKey(filter))
+  if (cached) return cached
+
+  // Jalur 2: getSourceData hanya bisa dibaca per-kecamatan, jadi tanpa filter
+  // kecamatan tidak ada jalur cadangan.
+  if (!filter?.kecamatan) {
+    throw new Error(
+      'Action getPoktan belum tersedia di Apps Script dan permintaan tanpa filter kecamatan tidak punya jalur cadangan.',
+    )
+  }
+  const viaSumber = await getPoktanViaSourceData(filter)
+  setLocalCache(cacheKey(filter), viaSumber)
+  return viaSumber
 }
 
 export async function getPoktanById(idPoktan: string): Promise<MasterPoktan | null> {
   if (USE_MOCK) return null
-  try {
-    return await gasGet<MasterPoktan | null>('getPoktan', { idPoktan })
-  } catch (err) {
-    if (!isActionUnknown(err)) throw err
-    // Jalur 2: cari manual di seluruh kecamatan (16 request, hanya dipakai
-    // untuk link langsung / tidak ada filter kecamatan di form).
-    const all = await getPoktan({ limit: HARD_LIMIT }).catch(() => EMPTY)
-    return all.items.find((p) => p.idPoktan === idPoktan) ?? null
+  if (!getPoktanUnavailable) {
+    try {
+      return await gasGet<MasterPoktan | null>('getPoktan', { idPoktan })
+    } catch (err) {
+      if (!isActionUnknown(err)) throw err
+      getPoktanUnavailable = true
+    }
   }
+  // Jalur 2: cari manual di seluruh kecamatan (16 request, hanya dipakai untuk
+  // link langsung / pemanggilan tanpa filter kecamatan).
+  const all = await getPoktan({ limit: HARD_LIMIT }).catch(() => EMPTY)
+  return all.items.find((p) => p.idPoktan === idPoktan) ?? null
 }
 
 // ============================================================
