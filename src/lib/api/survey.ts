@@ -26,6 +26,7 @@ export async function getSurveyById(idSurvey: string): Promise<DataSurvey | null
 export interface CreateSurveyPayload {
   idProspek: string
   namaGapoktan: string
+  namaKetua?: string
   jumlahAnggota?: number
   luasSawah?: number
   jenisAlsintan?: string

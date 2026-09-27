@@ -25,9 +25,16 @@ import type { MasterPoktan, StatusSurvey } from '@/lib/types'
 
 const surveySchema = z.object({
   kecamatan: z.string().min(2, 'Pilih kecamatan terlebih dahulu'),
-  idProspek: z.string().min(1, 'Pilih kelompok tani (gapoktan)'),
-  namaGapoktan: z.string().min(3, 'Nama Gapoktan harus diisi'),
-  jumlahAnggota: z.number().min(1, 'Jumlah anggota minimal 1'),
+  idProspek: z.string().min(1, 'Pilih nama poktan'),
+  namaGapoktan: z.string().min(3, 'Nama poktan harus diisi'),
+  // 13 dari 3.242 poktan tidak punya ketua di master — kolom ini tidak diwajibkan
+  namaKetua: z.string().optional(),
+  jumlahAnggota: z
+    .number({
+      required_error: 'Jumlah anggota wajib diisi',
+      invalid_type_error: 'Jumlah anggota wajib diisi',
+    })
+    .min(1, 'Jumlah anggota minimal 1'),
   luasSawah: z.number().min(0.1, 'Luas lahan minimal 0.1 Ha'),
   jenisAlsintan: z.string().min(2, 'Jenis alsintan harus diisi'),
   estimasiHarga: z.number().min(0, 'Estimasi harga tidak boleh negatif'),
@@ -46,7 +53,7 @@ export default function SurveyPage() {
   const [isGettingGps, setIsGettingGps] = useState(false)
   const [foto, setFoto] = useState<{ base64: string; name: string; preview: string } | null>(null)
   const [activeTab, setActiveTab] = useState<'form' | 'history'>('form')
-  // Master Poktan 2026: pilih kecamatan dulu, lalu kelompok tani di dalamnya
+  // Master Poktan 2026: pilih kecamatan dulu, lalu nama poktan di dalamnya
   const [kecamatan, setKecamatan] = useState('')
   const [cariPoktan, setCariPoktan] = useState('')
   const [dipilih, setDipilih] = useState<MasterPoktan | null>(null)
@@ -82,7 +89,7 @@ export default function SurveyPage() {
     staleTime: 24 * 60 * 60 * 1000,
   })
 
-  // Kelompok tani per kecamatan — diambil saat kecamatan dipilih (maks. ±311 baris)
+  // Daftar poktan per kecamatan — diambil saat kecamatan dipilih (maks. ±311 baris)
   const { data: poktanData, isLoading: loadingPoktan } = useQuery({
     queryKey: ['poktan', kecamatan],
     queryFn: () => getPoktan({ kecamatan, limit: 1000 }),
@@ -109,6 +116,7 @@ export default function SurveyPage() {
       kecamatan: '',
       idProspek: initialProspekId,
       namaGapoktan: prospekData?.items.find((p) => p.idProspek === initialProspekId)?.namaGapoktan || '',
+      namaKetua: '',
       jumlahAnggota: 30,
       luasSawah: 50,
       jenisAlsintan: 'Combine Harvester',
@@ -144,6 +152,12 @@ export default function SurveyPage() {
 
   const idProspekTerpilih = useWatch({ control, name: 'idProspek' })
 
+  // Total seluruh poktan 2026 (untuk keterangan di header blok)
+  const totalPoktan = useMemo(
+    () => (wilayahData ?? []).reduce((n, w) => n + (w.jumlahGapoktan || 0), 0),
+    [wilayahData],
+  )
+
   // Master Poktan 2026 yang cocok dengan pencarian di dalam kecamatan terpilih
   const poktanTerfilter = useMemo(() => {
     const list = poktanData?.items ?? []
@@ -158,14 +172,19 @@ export default function SurveyPage() {
     )
   }, [poktanData, cariPoktan])
 
-  // Detail kelompok tani terpilih (kartu info di bawah dropdown)
+  // Detail poktan terpilih (semua kolom master, untuk verifikasi Analis)
   useEffect(() => {
     const found = (poktanData?.items ?? []).find((p) => p.idPoktan === idProspekTerpilih)
     setDipilih(found ?? null)
   }, [idProspekTerpilih, poktanData])
 
+  // Master mencatat 0 anggota untuk 621 dari 3.242 poktan. Angka 0 itu bukan
+  // data yang bisa dipercaya, jadi field dibiarkan kosong agar Analis menghitung
+  // sendiri di lapangan daripada mengirim 0.
+  const anggotaKosongDiMaster = dipilih !== null && dipilih.jumlahAnggota === 0
+
   // Deep-link dari halaman Prospek/Analis (?prospekId=P001) — isi kecamatan
-  // dari prospek tersebut supaya langsung bisa dipilih gapoktannya.
+  // dari prospek tersebut supaya nama poktannya bisa langsung dipilih.
   useEffect(() => {
     if (kecamatan) return
     const asal = prospekData?.items.find((p) => p.idProspek === initialProspekId)
@@ -178,11 +197,12 @@ export default function SurveyPage() {
   const handleSelectKecamatan = (nama: string) => {
     setKecamatan(nama)
     setValue('kecamatan', nama, { shouldValidate: true })
-    // Ganti kecamatan = pilihan kelompok tani tidak berlaku lagi
+    // Ganti kecamatan = pilihan poktan tidak berlaku lagi
     setCariPoktan('')
     if (idProspekTerpilih) {
       setValue('idProspek', '', { shouldValidate: true })
       setValue('namaGapoktan', '', { shouldValidate: true })
+      setValue('namaKetua', '', { shouldValidate: true })
       setValue('jumlahAnggota', 30)
     }
   }
@@ -190,13 +210,17 @@ export default function SurveyPage() {
   const handleSelectPoktan = (id: string) => {
     setValue('idProspek', id, { shouldValidate: true })
     const selected = (poktanData?.items ?? []).find((p) => p.idPoktan === id)
-    if (selected) {
-      setValue('namaGapoktan', selected.namaPoktan, { shouldValidate: true })
-      // Sebagian poktan di master memang tercatat 0 anggota — isi manual
-      if (selected.jumlahAnggota > 0) {
-        setValue('jumlahAnggota', selected.jumlahAnggota, { shouldValidate: true })
-      }
-    }
+    if (!selected) return
+    setValue('namaGapoktan', selected.namaPoktan, { shouldValidate: true })
+    setValue('namaKetua', selected.ketua, { shouldValidate: true })
+    // 0 anggota di master dikosongkan (bukan diisi 0) agar Analis menghitung
+    // sendiri di lapangan — lihat anggotaKosongDiMaster. setValue(…, undefined)
+    // emptying the input; validasi min(1) lalu menandai field itu belum terisi.
+    setValue(
+      'jumlahAnggota',
+      selected.jumlahAnggota > 0 ? selected.jumlahAnggota : (undefined as unknown as number),
+      { shouldValidate: true },
+    )
   }
 
   const onSubmit = async (data: SurveyFormData) => {
@@ -205,6 +229,7 @@ export default function SurveyPage() {
     await createSurvey({
       idProspek: data.idProspek,
       namaGapoktan: data.namaGapoktan,
+      namaKetua: data.namaKetua,
       jumlahAnggota: data.jumlahAnggota,
       luasSawah: data.luasSawah,
       jenisAlsintan: data.jenisAlsintan,
@@ -226,6 +251,7 @@ export default function SurveyPage() {
     setValue('kecamatan', '')
     setValue('idProspek', '')
     setValue('namaGapoktan', '')
+    setValue('namaKetua', '')
     setGpsLocation(null)
     setFoto(null)
     setKecamatan('')
@@ -304,12 +330,12 @@ export default function SurveyPage() {
         <div className="card">
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-              {/* Reference Gapoktan — Master Poktan 2026 per kecamatan */}
+              {/* Referensi Poktan — Master Poktan 2026 per kecamatan */}
               <div style={{ padding: 14, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
                   <Users size={15} color="#16a34a" />
                   <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#15803d' }}>
-                    Data Kelompok Tani — Master Poktan 2026
+                    Master Poktan 2026 — {formatNumber(totalPoktan)} poktan, {wilayahData?.length ?? 0} kecamatan
                   </span>
                 </div>
 
@@ -324,7 +350,7 @@ export default function SurveyPage() {
                       <option value="">-- Pilih Kecamatan --</option>
                       {(wilayahData ?? []).map((w) => (
                         <option key={w.idKecamatan} value={w.kecamatan}>
-                          {w.kecamatan} ({w.jumlahGapoktan} poktan)
+                          {w.kecamatan} ({formatNumber(w.jumlahGapoktan)} poktan)
                         </option>
                       ))}
                     </select>
@@ -332,7 +358,7 @@ export default function SurveyPage() {
                   </div>
 
                   <div>
-                    <label className="input-label">2. Kelompok Tani / Gapoktan</label>
+                    <label className="input-label">2. Nama Poktan</label>
                     {!kecamatan ? (
                       <div className="input" style={{ color: '#94a3b8', display: 'flex', alignItems: 'center' }}>
                         Pilih kecamatan lebih dulu
@@ -349,7 +375,7 @@ export default function SurveyPage() {
                             type="text"
                             className="input"
                             style={{ paddingLeft: 30 }}
-                            placeholder="Cari nama poktan / desa / ketua..."
+                            placeholder="Cari nama poktan / desa / ketua / ID..."
                             value={cariPoktan}
                             onChange={(e) => setCariPoktan(e.target.value)}
                           />
@@ -360,7 +386,11 @@ export default function SurveyPage() {
                           onChange={(e) => handleSelectPoktan(e.target.value)}
                         >
                           <option value="">
-                            {loadingPoktan ? '-- Memuat kelompok tani...' : '-- Pilih Kelompok Tani --'}
+                            {loadingPoktan
+                              ? '-- Memuat daftar poktan...'
+                              : poktanTerfilter.length
+                                ? `-- Pilih Nama Poktan (${poktanTerfilter.length}) --`
+                                : '-- Pilih Nama Poktan --'}
                           </option>
                           {initialProspekId && !poktanData?.items.some((p) => p.idPoktan === initialProspekId) && (
                             <option value={initialProspekId}>
@@ -370,7 +400,7 @@ export default function SurveyPage() {
                           )}
                           {poktanTerfilter.map((p) => (
                             <option key={p.idPoktan} value={p.idPoktan}>
-                              {p.namaPoktan} — Desa {p.desa} ({p.jumlahAnggota} anggota)
+                              {p.namaPoktan} — Desa {p.desa || '-'} ({formatNumber(p.jumlahAnggota)} anggota)
                             </option>
                           ))}
                         </select>
@@ -380,13 +410,14 @@ export default function SurveyPage() {
                     {kecamatan && !loadingPoktan && poktanTerfilter.length === 0 && (
                       <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 4 }}>
                         {cariPoktan
-                          ? 'Tidak ada kelompok tani yang cocok dengan pencarian.'
-                          : 'Belum ada kelompok tani tercatat di kecamatan ini pada master 2026.'}
+                          ? `Tidak ada poktan di ${kecamatan} yang cocok dengan "${cariPoktan}".`
+                          : `Belum ada poktan tercatat di ${kecamatan} pada master 2026.`}
                       </p>
                     )}
                   </div>
                 </div>
 
+                {/* Rincian lengkap data master agar Analis bisa memverifikasi di lapangan */}
                 {dipilih && (
                   <div
                     style={{
@@ -399,52 +430,98 @@ export default function SurveyPage() {
                       color: '#334155',
                     }}
                   >
-                    <strong style={{ color: '#0f172a' }}>{dipilih.namaPoktan}</strong> · ID Poktan {dipilih.idPoktan}
-                    <div style={{ marginTop: 2 }}>
-                      Desa {dipilih.desa || '-'} · Ketua {dipilih.ketua || '-'} · {formatNumber(dipilih.jumlahAnggota)} anggota
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8 }}>
+                      <div>
+                        <div style={{ fontSize: '0.6875rem', color: '#64748b', textTransform: 'uppercase' }}>Nama Poktan</div>
+                        <div style={{ fontWeight: 700, color: '#0f172a' }}>{dipilih.namaPoktan}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.6875rem', color: '#64748b', textTransform: 'uppercase' }}>ID Poktan</div>
+                        <div style={{ fontFamily: 'monospace', color: '#0f172a' }}>{dipilih.idPoktan}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.6875rem', color: '#64748b', textTransform: 'uppercase' }}>Jumlah Anggota</div>
+                        <div style={{ color: anggotaKosongDiMaster ? '#b45309' : '#0f172a', fontWeight: anggotaKosongDiMaster ? 700 : 400 }}>
+                          {formatNumber(dipilih.jumlahAnggota)}
+                          {anggotaKosongDiMaster && ' — kosong di master'}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.6875rem', color: '#64748b', textTransform: 'uppercase' }}>Nama Desa</div>
+                        <div style={{ color: '#0f172a' }}>{dipilih.desa || '-'}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.6875rem', color: '#64748b', textTransform: 'uppercase' }}>Nama Ketua</div>
+                        <div style={{ color: '#0f172a' }}>{dipilih.ketua || '(kosong di master)'}</div>
+                      </div>
                     </div>
                     {dipilih.alamat && (
-                      <div style={{ marginTop: 2, fontSize: '0.75rem', color: '#64748b' }}>{dipilih.alamat}</div>
+                      <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>
+                        <span style={{ fontSize: '0.6875rem', color: '#64748b', textTransform: 'uppercase' }}>Alamat Sekretariat </span>
+                        <span style={{ fontSize: '0.75rem', color: '#475569' }}>{dipilih.alamat}</span>
+                      </div>
                     )}
                   </div>
                 )}
               </div>
 
-              {/* Nama Gapoktan */}
+              {/* Nama Poktan (bisa dikoreksi Analis) */}
               <div>
-                <label className="input-label">Nama Gapoktan / Kelompok Tani</label>
+                <label className="input-label">Nama Poktan</label>
                 <input
                   type="text"
-                  placeholder="Nama Gapoktan"
+                  placeholder="Nama poktan"
                   className={`input ${errors.namaGapoktan ? 'error' : ''}`}
                   {...register('namaGapoktan')}
                 />
                 {errors.namaGapoktan && <p className="input-error">{errors.namaGapoktan.message}</p>}
               </div>
 
-              {/* Grid 2 Cols: Anggota & Luas Sawah */}
+              {/* Grid 2 Cols: Ketua & Anggota */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
                 <div>
-                  <label className="input-label">Jumlah Anggota Petani</label>
+                  <label className="input-label">Nama Ketua</label>
+                  <input
+                    type="text"
+                    placeholder={dipilih ? 'Terisi otomatis dari master' : 'Nama ketua poktan'}
+                    className={`input ${errors.namaKetua ? 'error' : ''}`}
+                    {...register('namaKetua')}
+                  />
+                  {errors.namaKetua && <p className="input-error">{errors.namaKetua.message}</p>}
+                  {dipilih && !dipilih.ketua && (
+                    <p style={{ fontSize: '0.75rem', color: '#b45309', marginTop: 4 }}>
+                      Master tidak mencatat ketua untuk poktan ini — mohon dilengkapi.
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="input-label">Jumlah Anggota</label>
                   <input
                     type="number"
-                    placeholder="Contoh: 45"
+                    placeholder={anggotaKosongDiMaster ? 'Kosong di master — isi hasil hitung lapangan' : 'Contoh: 45'}
                     className={`input ${errors.jumlahAnggota ? 'error' : ''}`}
                     {...register('jumlahAnggota', { valueAsNumber: true })}
                   />
                   {errors.jumlahAnggota && <p className="input-error">{errors.jumlahAnggota.message}</p>}
+                  {anggotaKosongDiMaster && !errors.jumlahAnggota && (
+                    <p style={{ fontSize: '0.75rem', color: '#b45309', marginTop: 4 }}>
+                      Master mencatat 0 anggota. Angka 0 bukan data yang dapat dipercaya — isi hasil hitung lapangan.
+                    </p>
+                  )}
                 </div>
-                <div>
-                  <label className="input-label">Luas Lahan (Ha)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    placeholder="Contoh: 120.5"
-                    className={`input ${errors.luasSawah ? 'error' : ''}`}
-                    {...register('luasSawah', { valueAsNumber: true })}
-                  />
-                  {errors.luasSawah && <p className="input-error">{errors.luasSawah.message}</p>}
-                </div>
+              </div>
+
+              {/* Luas Lahan */}
+              <div>
+                <label className="input-label">Luas Lahan (Ha)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="Contoh: 120.5"
+                  className={`input ${errors.luasSawah ? 'error' : ''}`}
+                  {...register('luasSawah', { valueAsNumber: true })}
+                />
+                {errors.luasSawah && <p className="input-error">{errors.luasSawah.message}</p>}
               </div>
 
               {/* Grid 2 Cols: Jenis Alsintan & Estimasi Harga */}
@@ -602,7 +679,9 @@ export default function SurveyPage() {
               <thead>
                 <tr>
                   <th>Waktu</th>
-                  <th>Gapoktan</th>
+                  <th>Poktan</th>
+                  <th>Ketua</th>
+                  <th>Anggota</th>
                   <th>Alsintan</th>
                   <th>Estimasi Harga</th>
                   <th>Luas Lahan</th>
@@ -614,13 +693,13 @@ export default function SurveyPage() {
               <tbody>
                 {loadingSurvey ? (
                   <tr>
-                    <td colSpan={8}>
+                    <td colSpan={10}>
                       <div className="skeleton" style={{ height: 24 }} />
                     </td>
                   </tr>
                 ) : surveyList.length === 0 ? (
                   <tr>
-                    <td colSpan={8} style={{ textAlign: 'center', color: '#64748b' }}>
+                    <td colSpan={10} style={{ textAlign: 'center', color: '#64748b' }}>
                       Belum ada survey tersimpan — isi form di tab sebelah, hasilnya masuk ke sini dan ke sheet DATA_SURVEY.
                     </td>
                   </tr>
@@ -632,9 +711,11 @@ export default function SurveyPage() {
                       <td data-label="Waktu" style={{ fontSize: '0.8125rem', color: '#64748b' }}>
                         {formatDateTime(s.timestamp)}
                       </td>
-                      <td data-label="Gapoktan" style={{ fontWeight: 700, color: '#0f172a' }}>
+                      <td data-label="Poktan" style={{ fontWeight: 700, color: '#0f172a' }}>
                         {s.namaGapoktan}
                       </td>
+                      <td data-label="Ketua">{s.namaKetua || '-'}</td>
+                      <td data-label="Anggota">{s.jumlahAnggota ? formatNumber(s.jumlahAnggota) : '-'}</td>
                       <td data-label="Alsintan">{s.jenisAlsintan || '-'}</td>
                       <td data-label="Estimasi Harga">{s.estimasiHarga ? formatRupiah(s.estimasiHarga) : '-'}</td>
                       <td data-label="Luas Sawah">{s.luasSawah ? `${s.luasSawah} Ha` : '-'}</td>

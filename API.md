@@ -59,12 +59,14 @@ Base URL: `VITE_GAS_API_URL` (Contoh: `https://script.google.com/macros/s/{DEPLO
 - **Action**: `createProspek`
 > `ID_PROSPEK` punya dua sumber: nomor urut manual (`P001`, `P002`, ...) dan ID Poktan
 > numerik dari Master Poktan 2026 (mis. `5107401`) yang dibuat otomatis saat
-> gapoktan tersebut pertama kali disurvei. Keduanya unik.
+> poktan tersebut pertama kali disurvei. Keduanya unik.
+> Nama poktan dikirim lewat field `namaGapoktan` (nama kolom sheet tidak diubah,
+> jadi baris lama tetap terbaca) — isinya adalah **nama poktan**, bukan gapoktan.
 - **Body**:
 ```json
 {
   "idKecamatan": "W001",
-  "namaGapoktan": "Gapoktan Maju Bersama",
+  "namaGapoktan": "Poktan Maju Bersama",
   "komoditas": "Padi",
   "estimasiKebutuhan": "Combine Harvester 2 unit",
   "catatan": "Akses jalan bagus"
@@ -80,7 +82,8 @@ Base URL: `VITE_GAS_API_URL` (Contoh: `https://script.google.com/macros/s/{DEPLO
 ```json
 {
   "idProspek": "P001",
-  "namaGapoktan": "Gapoktan Maju Bersama",
+  "namaGapoktan": "Poktan Maju Bersama",
+  "namaKetua": "Budi Santoso",
   "jumlahAnggota": 85,
   "luasSawah": 320,
   "jenisAlsintan": "Combine Harvester",
@@ -91,6 +94,13 @@ Base URL: `VITE_GAS_API_URL` (Contoh: `https://script.google.com/macros/s/{DEPLO
   "catatan": "Verifikasi luas sawah akurat"
 }
 ```
+
+> **`namaKetua` opsional.** Diisi otomatis dari kolom `Nama Ketua` Master
+> Poktan 2026 dan disimpan ke kolom baru `NAMA_KETUA` di `DATA_SURVEY` (kolom
+> Q, ditambahkan di posisi terakhir supaya kolom A–P tidak bergeser). 13 dari
+> 3.242 poktan tidak punya ketua di master, jadi field ini tidak diwajibkan.
+> `jumlahAnggota` tetap wajib minimal 1: 621 poktan tercatat `0` di master dan
+> angka itu dikosongkan di form agar Analis mengisi hasil hitung lapangan.
 
 > **`idProspek` boleh berisi ID Poktan.** Form Survey mengirim `idProspek` berisi
 > ID Poktan dari Master Poktan 2026 (mis. `"5107401"`), bukan hanya nomor urut

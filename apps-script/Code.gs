@@ -259,6 +259,7 @@ function mapSurvey(r) {
     idSurvey: str(r['ID_SURVEY']),
     idProspek: str(r['ID_PROSPEK']),
     namaGapoktan: str(r['NAMA_GAPOKTAN']),
+    namaKetua: str(r['NAMA_KETUA']),
     jumlahAnggota: num(r['JUMLAH_ANGGOTA']),
     luasSawah: num(r['LUAS_SAWAH_AKTUAL']),
     jenisAlsintan: str(r['JENIS_ALSINTAN']),
@@ -490,6 +491,7 @@ function apiCreateSurvey(p) {
     'ID_SURVEY': idSurvey,
     'ID_PROSPEK': prosp.idProspek,
     'NAMA_GAPOKTAN': str(p.namaGapoktan) || prosp.namaGapoktan,
+    'NAMA_KETUA': str(p.namaKetua),
     'JUMLAH_ANGGOTA': num(p.jumlahAnggota),
     'LUAS_SAWAH_AKTUAL': num(p.luasSawah),
     'JENIS_ALSINTAN': str(p.jenisAlsintan),
@@ -656,11 +658,16 @@ function apiGetSourceData(p) {
 
 // ----------------------------------------------------------- master poktan
 // Sumber: spreadsheet "Poktan 2026" (SOURCES key 'poktan') — 16 tab, satu per
-// kecamatan, total ±3.243 kelompok tani. Struktur tiap tab:
+// kecamatan, total 3.242 poktan. Struktur tiap tab:
 //   baris 1 = judul ("List Kelompok Tani ...")
 //   baris 2 = header (No | Nama Poktan | ID Poktan | Jumlah Anggota | Nama Desa |
 //                    Nama Ketua | Alamat Sekretariat)
 //   baris 3+ = data
+//
+// CATATAN: daftar ini berisi POKTAN (kelompok tani), bukan gapoktan. Satu baris
+// = satu poktan dengan satu ketua. "Gapoktan" arti resminya gabungan beberapa
+// poktan, jadi istilah itu tidak tepat untuk data ini.
+//
 // Sel "Nama Poktan" tidak bersih: nama poktan di awal sel, disusul label UI
 // eksportir ("Tambah Anggota", "Ubah", "Hapus", ...) setelah rentetan spasi
 // panjang — karena itu nama diambil dari segmen pertama saja.
@@ -668,9 +675,6 @@ var POKTAN_CACHE_TABS = 'poktan2026:tabs';
 var POKTAN_CACHE_PREFIX = 'poktan2026:tab:';
 var POKTAN_CACHE_TTL = 21600; // 6 jam
 
-// Sel "Nama Poktan" tidak bersih: nama poktan berada di awal sel, disusul
-// label UI eksportir ("Tambah Anggota", "Komoditas yang diusahakan", "Ubah",
-// "Hapus", ...) yang dipisahkan oleh rentetan spasi panjang.
 function namaPoktanDari(v) {
   var segmen = str(v).split(/[\r\n]+|\s{2,}/);
   for (var i = 0; i < segmen.length; i++) {

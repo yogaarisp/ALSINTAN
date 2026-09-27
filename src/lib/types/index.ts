@@ -136,6 +136,7 @@ export interface DataSurvey {
   idSurvey: string
   idProspek: string
   namaGapoktan: string
+  namaKetua?: string            // auto-fill dari Master Poktan 2026
   jumlahAnggota?: number
   luasSawah?: number          // Hektar
   jenisAlsintan?: string
@@ -334,6 +335,7 @@ export interface CreateProspekForm {
 export interface CreateSurveyForm {
   idProspek: string
   namaGapoktan: string
+  namaKetua?: string
   jumlahAnggota?: number
   luasSawah?: number
   jenisAlsintan?: string
