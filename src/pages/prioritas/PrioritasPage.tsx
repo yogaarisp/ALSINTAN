@@ -206,7 +206,7 @@ export default function PrioritasPage() {
                   </div>
                 </th>
                 <th>Level Prioritas</th>
-                <th>Pipeline AO</th>
+                <th>Pipeline Analis</th>
                 <th style={{ textAlign: 'right' }}>Aksi</th>
               </tr>
             </thead>
@@ -260,7 +260,7 @@ export default function PrioritasPage() {
                           {levelInfo.label}
                         </span>
                       </td>
-                      <td data-label="Pipeline AO">
+                      <td data-label="Pipeline Analis">
                         <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: item.prospekCount > 0 ? '#16a34a' : '#94a3b8' }}>
                           {item.prospekCount} Prospek
                         </span>

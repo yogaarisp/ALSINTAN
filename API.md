@@ -18,7 +18,7 @@ Base URL: `VITE_GAS_API_URL` (Contoh: `https://script.google.com/macros/s/{DEPLO
     "totalGapoktan": 229,
     "totalLuasLahan": 18090,
     "prospekBaru": 8,
-    "aoAktif": 3
+    "analisAktif": 3
   }
 }
 ```
@@ -54,7 +54,7 @@ Base URL: `VITE_GAS_API_URL` (Contoh: `https://script.google.com/macros/s/{DEPLO
 ## 3. Data Prospek
 - **Method**: `GET`
 - **Action**: `getProspek`
-- **Query Params**: `status`, `idAO`, `kecamatan`, `page`, `limit`
+- **Query Params**: `status`, `idAnalis`, `kecamatan`, `page`, `limit`
 - **Method**: `POST`
 - **Action**: `createProspek`
 - **Body**:
@@ -91,7 +91,46 @@ Base URL: `VITE_GAS_API_URL` (Contoh: `https://script.google.com/macros/s/{DEPLO
 
 ---
 
-## 5. Sumber Data (Spreadsheet Sumber Lain — Read-only)
+## 5. Master Analis
+- **Method**: `GET`
+- **Action**: `getAnalis`
+- **Response**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "idAnalis": "AN001",
+      "namaAnalis": "Budi Santoso",
+      "wilayah": ["Purworejo"],
+      "status": "AKTIF",
+      "email": "budi@siap-alsintan.id",
+      "totalProspek": 12,
+      "totalSurvey": 8
+    }
+  ]
+}
+```
+- **Method**: `POST`
+- **Action**: `createAnalis`
+- **Body**:
+```json
+{
+  "namaAnalis": "Budi Santoso",
+  "email": "budi@siap-alsintan.id",
+  "wilayah": ["Purworejo"],
+  "status": "AKTIF"
+}
+```
+- **Method**: `POST`
+- **Action**: `updateAnalisStatus`
+- **Body**: `{ "idAnalis": "AN001", "status": "TIDAK_AKTIF" }`
+
+> Action lama `getAO` / `createAO` / `updateAOStatus` masih dilayani sebagai alias.
+
+---
+
+## 6. Sumber Data (Spreadsheet Sumber Lain — Read-only)
 - **Method**: `GET`
 - **Action**: `getSources`
 - **Response**: daftar spreadsheet sumber (Poktan, Produksi, Rekap) + daftar tab (`nama`, `baris`, `kolom`) + `url` + `status`

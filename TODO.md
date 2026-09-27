@@ -3,13 +3,13 @@
 ## Fase 1A (Foundation & Core UI/UX) — [SELESAI ✅]
 - [x] Inisialisasi React + Vite 5 + TypeScript + Tailwind CSS v4 + PWA
 - [x] Design System Tokens & Responsive Mobile-first Navigation (Sidebar + Mobile Bottom Nav)
-- [x] Authentication Layer (Role-based access: Admin, AO, Manajemen)
+- [x] Authentication Layer (Role-based access: Admin, Analis, Manajemen)
 - [x] Decision-support Executive Dashboard dengan KPI Cards & Chart Analytics
 - [x] Peta Potensi Wilayah Interaktif (Leaflet Web Map + Marker Priority Color Coding + Detail Drawer)
 - [x] Ranking Prioritas Wilayah dengan Sorting, Filtering, dan Breakdown Transparency Modal
 - [x] Configurable Priority Analysis Engine (`/src/lib/services/priority-engine.ts`)
 - [x] Pipeline Prospek Alsintan (List, Search, Create Modal, Detail Inspection)
-- [x] Dashboard AO Khusus dengan penugasan wilayah dan antrian survey
+- [x] Dashboard Analis Khusus dengan penugasan wilayah dan antrian survey
 - [x] Mobile-first Survey Lapangan dengan Browser Geolocation GPS & Riwayat Survey
 - [x] Dashboard Monitoring & Evaluasi Manajemen (Perbandingan Potensi Baseline vs Realisasi Aktual)
 

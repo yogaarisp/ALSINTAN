@@ -29,9 +29,9 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/peta', icon: Map, label: 'Peta Potensi' },
   { to: '/prioritas', icon: BarChart3, label: 'Prioritas Wilayah' },
-  { to: '/prospek', icon: ClipboardList, label: 'Prospek', roles: ['ADMIN', 'AO', 'MANAJEMEN'] },
-  { to: '/survey', icon: FileText, label: 'Survey', roles: ['ADMIN', 'AO'] },
-  { to: '/ao', icon: Users, label: 'AO', roles: ['ADMIN', 'MANAJEMEN'] },
+  { to: '/prospek', icon: ClipboardList, label: 'Prospek', roles: ['ADMIN', 'ANALIS', 'MANAJEMEN'] },
+  { to: '/survey', icon: FileText, label: 'Survey', roles: ['ADMIN', 'ANALIS'] },
+  { to: '/analis', icon: Users, label: 'Analis', roles: ['ADMIN', 'MANAJEMEN'] },
   { to: '/monitoring', icon: Activity, label: 'Monitoring', roles: ['ADMIN', 'MANAJEMEN'] },
   { to: '/sumber-data', icon: Database, label: 'Sumber Data' },
 ]

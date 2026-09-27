@@ -10,12 +10,12 @@ import {
   ArrowRight,
   Sparkles,
 } from 'lucide-react'
-import { getAO, createAO, updateAOStatus, type CreateAOForm } from '@/lib/api/ao'
+import { getAnalis, createAnalis, updateAnalisStatus, type CreateAnalisForm } from '@/lib/api/analis'
 import { getProspek } from '@/lib/api/prospek'
 import { getWilayah } from '@/lib/api/wilayah'
 import { rankWilayah } from '@/lib/services/priority-engine'
 import { useAuth } from '@/lib/auth/auth-context'
-import type { MasterAO, MasterWilayah } from '@/lib/types'
+import type { MasterAnalis, MasterWilayah } from '@/lib/types'
 import {
   formatDate,
   formatHektar,
@@ -24,16 +24,16 @@ import {
   getScoreColor,
 } from '@/lib/utils'
 import { getLocalCache } from '@/lib/utils/cache'
-import { MOCK_AO, MOCK_WILAYAH, MOCK_PROSPEK } from '@/lib/mock/mock-data'
+import { MOCK_ANALIS, MOCK_WILAYAH, MOCK_PROSPEK } from '@/lib/mock/mock-data'
 
-const aoSchema = z.object({
-  namaAO: z.string().min(3, 'Nama AO minimal 3 karakter'),
+const analisSchema = z.object({
+  namaAnalis: z.string().min(3, 'Nama Analis minimal 3 karakter'),
   email: z.string().email('Format email tidak valid'),
   wilayah: z.array(z.string()).min(1, 'Pilih minimal 1 wilayah penugasan'),
   status: z.enum(['AKTIF', 'TIDAK_AKTIF']),
 })
 
-export default function AOPage() {
+export default function AnalisPage() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -41,10 +41,10 @@ export default function AOPage() {
 
   const isAdminOrManager = user?.role === 'ADMIN' || user?.role === 'MANAJEMEN'
 
-  const { data: aoList = [] } = useQuery({
-    queryKey: ['ao'],
-    queryFn: getAO,
-    initialData: () => getLocalCache<MasterAO[]>('ao_all') ?? MOCK_AO,
+  const { data: analisList = [] } = useQuery({
+    queryKey: ['analis'],
+    queryFn: getAnalis,
+    initialData: () => getLocalCache<MasterAnalis[]>('analis_all') ?? MOCK_ANALIS,
     initialDataUpdatedAt: 0,
   })
 
@@ -72,16 +72,16 @@ export default function AOPage() {
   // Priority ranking
   const rankedWilayah = rankWilayah(wilayahList, prospekData?.items || [])
 
-  // Find active AO profile (if logged in as AO)
-  const currentAO = aoList.find((a) => a.idAO === user?.id || a.namaAO === user?.nama) || aoList[0]
+  // Find active Analis profile (if logged in as Analis)
+  const currentAnalis = analisList.find((a) => a.idAnalis === user?.id || a.namaAnalis === user?.nama) || analisList[0]
 
-  // Prospek assigned to current AO
-  const aoProspeks = (prospekData?.items || []).filter(
-    (p) => p.idAO === currentAO?.idAO || p.namaAO === currentAO?.namaAO
+  // Prospek assigned to current Analis
+  const analisProspeks = (prospekData?.items || []).filter(
+    (p) => p.idAnalis === currentAnalis?.idAnalis || p.namaAnalis === currentAnalis?.namaAnalis
   )
 
-  const prospekSelesai = aoProspeks.filter((p) => p.status === 'CLOSING' || p.status === 'POTENSIAL').length
-  const menungguSurvey = aoProspeks.filter((p) => p.status === 'BARU' || p.status === 'DALAM_PROSPEK').length
+  const prospekSelesai = analisProspeks.filter((p) => p.status === 'CLOSING' || p.status === 'POTENSIAL').length
+  const menungguSurvey = analisProspeks.filter((p) => p.status === 'BARU' || p.status === 'DALAM_PROSPEK').length
 
   const {
     register,
@@ -89,8 +89,8 @@ export default function AOPage() {
     setValue,
     reset,
     formState: { errors },
-  } = useForm<CreateAOForm>({
-    resolver: zodResolver(aoSchema),
+  } = useForm<CreateAnalisForm>({
+    resolver: zodResolver(analisSchema),
     defaultValues: {
       status: 'AKTIF',
       wilayah: [],
@@ -98,25 +98,25 @@ export default function AOPage() {
   })
 
   const createMutation = useMutation({
-    mutationFn: (form: CreateAOForm) => createAO(form),
-    onSuccess: (newAO) => {
-      toast.success(`AO ${newAO.namaAO} berhasil ditambahkan!`)
-      queryClient.invalidateQueries({ queryKey: ['ao'] })
+    mutationFn: (form: CreateAnalisForm) => createAnalis(form),
+    onSuccess: (newAnalis) => {
+      toast.success(`Analis ${newAnalis.namaAnalis} berhasil ditambahkan!`)
+      queryClient.invalidateQueries({ queryKey: ['analis'] })
       setIsAddModalOpen(false)
       setSelectedWilayahList([])
       reset()
     },
     onError: (err: any) => {
-      toast.error(err.message || 'Gagal menambahkan AO')
+      toast.error(err.message || 'Gagal menambahkan Analis')
     },
   })
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: 'AKTIF' | 'TIDAK_AKTIF' }) =>
-      updateAOStatus(id, status),
+      updateAnalisStatus(id, status),
     onSuccess: () => {
-      toast.success('Status AO berhasil diperbarui')
-      queryClient.invalidateQueries({ queryKey: ['ao'] })
+      toast.success('Status Analis berhasil diperbarui')
+      queryClient.invalidateQueries({ queryKey: ['analis'] })
     },
   })
 
@@ -129,11 +129,11 @@ export default function AOPage() {
     setValue('wilayah', next, { shouldValidate: true })
   }
 
-  const onSubmit = (data: CreateAOForm) => {
+  const onSubmit = (data: CreateAnalisForm) => {
     createMutation.mutate(data)
   }
 
-  const isLoading = aoList.length === 0 && wilayahList.length === 0
+  const isLoading = analisList.length === 0 && wilayahList.length === 0
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -141,15 +141,15 @@ export default function AOPage() {
       <div className="dev-banner">
         <Sparkles size={16} />
         <div>
-          <strong>Manajemen & Portal Account Officer (AO):</strong> Admin dapat meregistrasikan AO baru dan memetakan wilayah penugasan kecamatan ke Google Spreadsheet (Sheet: `MASTER_AO`).
+          <strong>Manajemen & Portal Analis:</strong> Admin dapat meregistrasikan Analis baru dan memetakan wilayah penugasan kecamatan ke Google Spreadsheet (Sheet: `MASTER_ANALIS`).
         </div>
       </div>
 
-      {/* Admin / Manager Toolbar: Add AO Button */}
+      {/* Admin / Manager Toolbar: Add Analis Button */}
       {isAdminOrManager && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 className="page-title">Manajemen Account Officer (AO)</h1>
+            <h1 className="page-title">Manajemen Analis</h1>
             <p className="page-subtitle">
               Kelola data master petugas lapangan dan alokasi wilayah kerja kecamatan
             </p>
@@ -164,22 +164,22 @@ export default function AOPage() {
               className="btn btn-primary"
             >
               <UserPlus size={16} />
-              Tambah AO Baru
+              Tambah Analis Baru
             </button>
           )}
         </div>
       )}
 
-      {/* Master AO List Table (Visible to Admin & Manajemen) */}
+      {/* Master Analis List Table (Visible to Admin & Manajemen) */}
       {isAdminOrManager && (
         <div className="card">
           <div className="card-header">
             <div>
               <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
-                Daftar Master Account Officer ({aoList.length} Petugas)
+                Daftar Master Analis ({analisList.length} Petugas)
               </h2>
               <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>
-                Petugas AO yang terdaftar untuk penugasan prospek dan survey lapangan
+                Petugas Analis yang terdaftar untuk penugasan prospek dan survey lapangan
               </p>
             </div>
           </div>
@@ -187,7 +187,7 @@ export default function AOPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>ID AO</th>
+                  <th>ID Analis</th>
                   <th>Nama Petugas</th>
                   <th>Email</th>
                   <th>Wilayah Penugasan</th>
@@ -205,15 +205,15 @@ export default function AOPage() {
                       </td>
                     </tr>
                   ))
-                ) : aoList.map((ao) => {
-                  const aoProspectsCount = (prospekData?.items || []).filter(
-                    (p) => p.idAO === ao.idAO || p.namaAO === ao.namaAO
+                ) : analisList.map((analis) => {
+                  const analisProspectsCount = (prospekData?.items || []).filter(
+                    (p) => p.idAnalis === analis.idAnalis || p.namaAnalis === analis.namaAnalis
                   ).length
 
                   return (
-                    <tr key={ao.idAO}>
-                      <td data-label="ID AO" style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#94a3b8' }}>
-                        {ao.idAO}
+                    <tr key={analis.idAnalis}>
+                      <td data-label="ID Analis" style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#94a3b8' }}>
+                        {analis.idAnalis}
                       </td>
                       <td data-label="Nama Petugas" style={{ fontWeight: 700, color: '#0f172a' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -229,18 +229,18 @@ export default function AOPage() {
                             fontSize: '0.75rem',
                             fontWeight: 700,
                           }}>
-                            {ao.namaAO.charAt(0)}
+                            {analis.namaAnalis.charAt(0)}
                           </div>
-                          <span>{ao.namaAO}</span>
+                          <span>{analis.namaAnalis}</span>
                         </div>
                       </td>
                       <td data-label="Email" style={{ fontSize: '0.8125rem', color: '#64748b' }}>
-                        {ao.email || '-'}
+                        {analis.email || '-'}
                       </td>
                       <td data-label="Wilayah Penugasan">
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                          {ao.wilayah && ao.wilayah.length > 0 ? (
-                            ao.wilayah.map((w: string) => (
+                          {analis.wilayah && analis.wilayah.length > 0 ? (
+                            analis.wilayah.map((w: string) => (
                               <span key={w} className="badge" style={{ background: '#f8fafc', color: '#334155', borderColor: '#e2e8f0' }}>
                                 {w}
                               </span>
@@ -250,19 +250,19 @@ export default function AOPage() {
                           )}
                         </div>
                       </td>
-                      <td data-label="Prospek Aktif" style={{ fontWeight: 600, color: aoProspectsCount > 0 ? '#16a34a' : '#64748b' }}>
-                        {aoProspectsCount} Prospek
+                      <td data-label="Prospek Aktif" style={{ fontWeight: 600, color: analisProspectsCount > 0 ? '#16a34a' : '#64748b' }}>
+                        {analisProspectsCount} Prospek
                       </td>
                       <td data-label="Status">
                         <span
                           className="badge"
                           style={{
-                            background: ao.status === 'AKTIF' ? '#f0fdf4' : '#fef2f2',
-                            color: ao.status === 'AKTIF' ? '#16a34a' : '#dc2626',
-                            borderColor: ao.status === 'AKTIF' ? '#bbf7d0' : '#fecaca',
+                            background: analis.status === 'AKTIF' ? '#f0fdf4' : '#fef2f2',
+                            color: analis.status === 'AKTIF' ? '#16a34a' : '#dc2626',
+                            borderColor: analis.status === 'AKTIF' ? '#bbf7d0' : '#fecaca',
                           }}
                         >
-                          {ao.status === 'AKTIF' ? 'Aktif' : 'Non-Aktif'}
+                          {analis.status === 'AKTIF' ? 'Aktif' : 'Non-Aktif'}
                         </span>
                       </td>
                       {user?.role === 'ADMIN' && (
@@ -270,14 +270,14 @@ export default function AOPage() {
                           <button
                             onClick={() =>
                               statusMutation.mutate({
-                                id: ao.idAO,
-                                status: ao.status === 'AKTIF' ? 'TIDAK_AKTIF' : 'AKTIF',
+                                id: analis.idAnalis,
+                                status: analis.status === 'AKTIF' ? 'TIDAK_AKTIF' : 'AKTIF',
                               })
                             }
                             className="btn btn-ghost btn-sm"
                             style={{ fontSize: '0.75rem' }}
                           >
-                            {ao.status === 'AKTIF' ? 'Nonaktifkan' : 'Aktifkan'}
+                            {analis.status === 'AKTIF' ? 'Nonaktifkan' : 'Aktifkan'}
                           </button>
                         </td>
                       )}
@@ -290,7 +290,7 @@ export default function AOPage() {
         </div>
       )}
 
-      {/* AO Personalized Banner (Main view for AO role) */}
+      {/* Analis Personalized Banner (Main view for Analis role) */}
       {!isAdminOrManager && (
         <div
           className="card"
@@ -317,17 +317,17 @@ export default function AOPage() {
                   border: '2px solid rgba(255,255,255,0.4)',
                 }}
               >
-                {currentAO?.namaAO ? currentAO.namaAO.charAt(0) : 'A'}
+                {currentAnalis?.namaAnalis ? currentAnalis.namaAnalis.charAt(0) : 'A'}
               </div>
               <div>
                 <div style={{ fontSize: '0.8125rem', color: '#bbf7d0', fontWeight: 600, textTransform: 'uppercase' }}>
-                  Account Officer Portal
+                  Portal Analis
                 </div>
                 <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: '2px 0 4px' }}>
-                  Halo, {currentAO?.namaAO || user?.nama || 'Petugas AO'}
+                  Halo, {currentAnalis?.namaAnalis || user?.nama || 'Petugas Analis'}
                 </h1>
                 <div style={{ fontSize: '0.8125rem', color: 'rgba(255,255,255,0.85)' }}>
-                  Wilayah Tugas: {currentAO?.wilayah?.join(', ') || 'Semua Wilayah'}
+                  Wilayah Tugas: {currentAnalis?.wilayah?.join(', ') || 'Semua Wilayah'}
                 </div>
               </div>
             </div>
@@ -341,7 +341,7 @@ export default function AOPage() {
         </div>
       )}
 
-      {/* AO Quick Metrics Cards */}
+      {/* Analis Quick Metrics Cards */}
       <div
         style={{
           display: 'grid',
@@ -359,10 +359,10 @@ export default function AOPage() {
 
         <div className="kpi-card">
           <span style={{ fontSize: '0.8125rem', color: '#64748b', fontWeight: 600 }}>
-            {isAdminOrManager ? 'Total Prospek Seluruh AO' : 'Prospek Saya'}
+            {isAdminOrManager ? 'Total Prospek Seluruh Analis' : 'Prospek Saya'}
           </span>
           <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', marginTop: 6 }}>
-            {isLoading ? <div className="skeleton" style={{ height: 32, width: 40 }} /> : isAdminOrManager ? (prospekData?.total || 0) : aoProspeks.length}
+            {isLoading ? <div className="skeleton" style={{ height: 32, width: 40 }} /> : isAdminOrManager ? (prospekData?.total || 0) : analisProspeks.length}
           </div>
           <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 4 }}>Total Gapoktan Diproses</div>
         </div>
@@ -384,7 +384,7 @@ export default function AOPage() {
         </div>
       </div>
 
-      {/* Top Rekomendasi Wilayah untuk AO (PRD Section 12) */}
+      {/* Top Rekomendasi Wilayah untuk Analis (PRD Section 12) */}
       <div className="card">
         <div className="card-header">
           <div>
@@ -459,13 +459,13 @@ export default function AOPage() {
         </div>
       </div>
 
-      {/* Daftar Prospek Milik AO */}
+      {/* Daftar Prospek Milik Analis */}
       {!isAdminOrManager && (
         <div className="card">
           <div className="card-header">
             <div>
               <h2 style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#0f172a' }}>
-                Daftar Prospek Saya ({aoProspeks.length})
+                Daftar Prospek Saya ({analisProspeks.length})
               </h2>
               <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>
                 Kelompok tani yang sedang dalam penanganan Anda
@@ -497,8 +497,8 @@ export default function AOPage() {
                       </td>
                     </tr>
                   ))
-                ) : aoProspeks.length > 0 ? (
-                  aoProspeks.map((p) => {
+                ) : analisProspeks.length > 0 ? (
+                  analisProspeks.map((p) => {
                     const statusInfo = getStatusProspekInfo(p.status)
                     return (
                       <tr key={p.idProspek}>
@@ -540,7 +540,7 @@ export default function AOPage() {
         </div>
       )}
 
-      {/* Modal Tambah AO Baru (Admin Only) */}
+      {/* Modal Tambah Analis Baru (Admin Only) */}
       {isAddModalOpen && (
         <div
           style={{
@@ -564,7 +564,7 @@ export default function AOPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <UserPlus size={18} color="#16a34a" />
                 <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
-                  Registrasi Account Officer (AO) Baru
+                  Registrasi Analis Baru
                 </h3>
               </div>
               <button
@@ -577,19 +577,19 @@ export default function AOPage() {
 
             <form onSubmit={handleSubmit(onSubmit)}>
               <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {/* Nama AO */}
+                {/* Nama Analis */}
                 <div>
-                  <label className="input-label">Nama Lengkap Petugas AO</label>
+                  <label className="input-label">Nama Lengkap Petugas Analis</label>
                   <input
                     type="text"
                     placeholder="Contoh: Rahmat Hidayat"
-                    className={`input ${errors.namaAO ? 'error' : ''}`}
-                    {...register('namaAO')}
+                    className={`input ${errors.namaAnalis ? 'error' : ''}`}
+                    {...register('namaAnalis')}
                   />
-                  {errors.namaAO && <p className="input-error">{errors.namaAO.message}</p>}
+                  {errors.namaAnalis && <p className="input-error">{errors.namaAnalis.message}</p>}
                 </div>
 
-                {/* Email AO */}
+                {/* Email Analis */}
                 <div>
                   <label className="input-label">Email Petugas (Akun Login)</label>
                   <input
@@ -666,7 +666,7 @@ export default function AOPage() {
                   disabled={createMutation.isPending}
                   className="btn btn-primary btn-sm"
                 >
-                  {createMutation.isPending ? 'Mendaftarkan...' : 'Daftarkan AO Baru'}
+                  {createMutation.isPending ? 'Mendaftarkan...' : 'Daftarkan Analis Baru'}
                 </button>
               </div>
             </form>

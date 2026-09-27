@@ -6,7 +6,7 @@ import DashboardPage from '@/pages/dashboard/DashboardPage'
 import PetaPage from '@/pages/peta/PetaPage'
 import PrioritasPage from '@/pages/prioritas/PrioritasPage'
 import ProspekPage from '@/pages/prospek/ProspekPage'
-import AOPage from '@/pages/ao/AOPage'
+import AnalisPage from '@/pages/analis/AnalisPage'
 import SurveyPage from '@/pages/survey/SurveyPage'
 import MonitoringPage from '@/pages/monitoring/MonitoringPage'
 import SumberDataPage from '@/pages/sumber-data/SumberDataPage'
@@ -72,7 +72,7 @@ export default function App() {
           <Route path="peta" element={<PetaPage />} />
           <Route path="prioritas" element={<PrioritasPage />} />
           <Route path="prospek" element={<ProspekPage />} />
-          <Route path="ao" element={<AOPage />} />
+          <Route path="analis" element={<AnalisPage />} />
           <Route path="survey" element={<SurveyPage />} />
           <Route path="monitoring" element={<MonitoringPage />} />
           <Route path="sumber-data" element={<SumberDataPage />} />

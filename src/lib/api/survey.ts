@@ -10,7 +10,7 @@ import { gasGet, gasPost } from './gas'
 export async function getSurvey(filter?: SurveyFilter): Promise<PaginatedResponse<DataSurvey>> {
   return gasGet<PaginatedResponse<DataSurvey>>('getSurvey', {
     status: filter?.status,
-    idAO: filter?.idAO,
+    idAnalis: filter?.idAnalis,
     dateFrom: filter?.dateFrom,
     dateTo: filter?.dateTo,
     page: filter?.page,
@@ -34,8 +34,8 @@ export interface CreateSurveyPayload {
   longitude?: number
   accuracy?: number
   catatan?: string
-  idAO?: string
-  namaAO?: string
+  idAnalis?: string
+  namaAnalis?: string
   fotoBase64?: string
   fotoName?: string
 }

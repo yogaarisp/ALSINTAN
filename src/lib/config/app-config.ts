@@ -24,7 +24,7 @@ export const API_CONFIG = {
     dashboard: 1000 * 60 * 5,   // 5 menit
     prospek: 1000 * 60 * 2,     // 2 menit
     survey: 1000 * 60 * 2,      // 2 menit
-    ao: 1000 * 60 * 30,         // 30 menit
+    analis: 1000 * 60 * 30,       // 30 menit
     komoditas: 1000 * 60 * 60,  // 1 jam
   },
 } as const

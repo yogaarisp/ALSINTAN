@@ -1,5 +1,11 @@
 # PRD --- SIAP ALSINTAN Web
 
+> **Catatan terminologi (26 Sep 2026):** Seluruh penyebutan role **AO (Account Officer)
+> kini disebut ANALIS** di aplikasi, API, dan Google Spreadsheet
+> (`MASTER_AO` → `MASTER_ANALIS`, kolom `ID_AO`/`NAMA_AO` → `ID_ANALIS`/`NAMA_ANALIS`).
+> Badisan dokumen PRD di bawah masih memakai istilah lama "AO" sebagai naskah
+>Requirements asli.
+
 ## Fase 1 --- Website Baru dengan Google Spreadsheet sebagai Data Source
 
 **Versi:** 1.1\

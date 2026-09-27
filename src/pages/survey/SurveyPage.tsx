@@ -129,8 +129,8 @@ export default function SurveyPage() {
   }
 
   const onSubmit = async (data: SurveyFormData) => {
-    // AO login → pakai identitas AO; selain itu biarkan backend memakai AO milik prospek
-    const isAO = user?.role === 'AO'
+    // Login sebagai Analis → pakai identitas Analis; selain itu biarkan backend memakai Analis milik prospek
+    const isAnalis = user?.role === 'ANALIS'
     await createSurvey({
       idProspek: data.idProspek,
       namaGapoktan: data.namaGapoktan,
@@ -142,7 +142,7 @@ export default function SurveyPage() {
       longitude: gpsLocation?.lng,
       accuracy: gpsLocation?.accuracy,
       catatan: data.catatan,
-      ...(isAO ? { idAO: user!.id, namaAO: user!.nama } : {}),
+      ...(isAnalis ? { idAnalis: user!.id, namaAnalis: user!.nama } : {}),
       ...(foto ? { fotoBase64: foto.base64, fotoName: foto.name } : {}),
     })
     await queryClient.invalidateQueries({ queryKey: ['survey'] })
@@ -437,7 +437,7 @@ export default function SurveyPage() {
                   <th>Alsintan</th>
                   <th>Estimasi Harga</th>
                   <th>Luas Lahan</th>
-                  <th>AO</th>
+                  <th>Analis</th>
                   <th>Koordinat GPS</th>
                   <th>Status</th>
                 </tr>
@@ -469,7 +469,7 @@ export default function SurveyPage() {
                       <td data-label="Alsintan">{s.jenisAlsintan || '-'}</td>
                       <td data-label="Estimasi Harga">{s.estimasiHarga ? formatRupiah(s.estimasiHarga) : '-'}</td>
                       <td data-label="Luas Sawah">{s.luasSawah ? `${s.luasSawah} Ha` : '-'}</td>
-                      <td data-label="AO">{s.namaAO}</td>
+                      <td data-label="Analis">{s.namaAnalis}</td>
                       <td data-label="Koordinat GPS" style={{ fontSize: '0.75rem', fontFamily: 'monospace' }}>
                         {s.latitude ? `${s.latitude.toFixed(4)}, ${s.longitude?.toFixed(4)}` : '-'}
                       </td>

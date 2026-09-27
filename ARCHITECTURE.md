@@ -9,7 +9,7 @@
 │  [UI & Page Layer]                                     │
 │  - Executive Dashboard      - Prioritas Wilayah        │
 │  - Peta Potensi (Leaflet)   - Pipeline Prospek         │
-│  - Dashboard AO             - Survey Lapangan (GPS)    │
+│  - Dashboard Analis         - Survey Lapangan (GPS)    │
 │  - Monitoring & Evaluasi                               │
 │                                                        │
 │  [Application Service Layer & State]                   │
@@ -19,7 +19,7 @@
 │                                                        │
 │  [API & Data Abstraction Layer]                        │
 │  - ApiClient (Axios Client with Sanitized Errors)      │
-│  - Service Abstractions: Wilayah, Prospek, AO, Survey  │
+│  - Service Abstractions: Wilayah, Prospek, Analis, Survey │
 └───────────────────────────┬────────────────────────────┘
                             │
                             │ HTTPS / JSON API
@@ -36,7 +36,7 @@
 ┌────────────────────────────────────────────────────────┐
 │          GOOGLE SPREADSHEET (Source of Truth)          │
 │  - MASTER_WILAYAH         - MASTER_KOMODITAS           │
-│  - MASTER_AO              - DATA_PROSPEK               │
+│  - MASTER_ANALIS          - DATA_PROSPEK               │
 │  - DATA_SURVEY            - HASIL_ANALISIS             │
 └────────────────────────────────────────────────────────┘
 ```

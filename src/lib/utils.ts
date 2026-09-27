@@ -132,7 +132,7 @@ export function getStatusSurveyInfo(status: StatusSurvey) {
 export function getRoleInfo(role: UserRole) {
   const map = {
     ADMIN: { label: 'Admin', badge: 'bg-purple-100 text-purple-700' },
-    AO: { label: 'Account Officer', badge: 'bg-blue-100 text-blue-700' },
+    ANALIS: { label: 'Analis', badge: 'bg-blue-100 text-blue-700' },
     MANAJEMEN: { label: 'Manajemen', badge: 'bg-green-100 text-green-700' },
   }
   return map[role]

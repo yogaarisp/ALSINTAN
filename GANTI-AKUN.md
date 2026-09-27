@@ -131,7 +131,7 @@ Kalau akun lama benar-benar mau ditinggalkan:
 | `Unknown action: ...` | Kode belum ter-deploy / versi tidak di-bump | Deploy ulang, pastikan pilih **New version** |
 | Halaman "Akses Ditolak" / minta login | "Who has access" bukan **Anyone** | Manage deployments → pensil → ubah jadi **Anyone** → Deploy |
 | Semua request balik 404 sesaat | Google kadang mengunci sementara | Tunggu 1–2 menit, ulangi |
-| Login Google gagal "email tidak terdaftar" | Email karyawan belum ada di sheet USERS | Tambah baris di sheet USERS (email, nama, role, ID_AO, AKTIF) |
+| Login Google gagal "email tidak terdaftar" | Email karyawan belum ada di sheet USERS | Tambah baris di sheet USERS (email, nama, role, ID_ANALIS, AKTIF) |
 | Popup Google: "origin_mismatch" / error redirect | Origin website belum terdaftar | OAuth Client ID → Authorized JavaScript origins harus memuat domain website persis (tanpa `/login`) |
 | Foto survey tidak muncul | Izin Drive belum diberikan saat authorize | Ulangi authorize, centang semua izin yang diminta |
 

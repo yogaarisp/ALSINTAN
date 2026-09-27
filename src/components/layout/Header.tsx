@@ -34,7 +34,7 @@ const PAGE_ICONS: Record<string, React.ElementType> = {
   '/prioritas': BarChart3,
   '/prospek': ClipboardList,
   '/survey': FileText,
-  '/ao': Users,
+  '/analis': Users,
   '/monitoring': Activity,
   '/sumber-data': Database,
   '/pengaturan': Settings,
@@ -83,7 +83,7 @@ export function Header({ title, onMenuClick }: HeaderProps) {
     navigate('/login')
   }
 
-  const handleSwitchUser = (role: 'ADMIN' | 'AO' | 'MANAJEMEN') => {
+  const handleSwitchUser = (role: 'ADMIN' | 'ANALIS' | 'MANAJEMEN') => {
     setShowUserMenu(false)
     if (role === 'ADMIN') {
       loginWithUser({
@@ -93,12 +93,12 @@ export function Header({ title, onMenuClick }: HeaderProps) {
         role: 'ADMIN',
         isActive: true,
       })
-    } else if (role === 'AO') {
+    } else if (role === 'ANALIS') {
       loginWithUser({
-        id: 'AO001',
+        id: 'AN001',
         nama: 'Budi Santoso',
         email: 'budi@siap-alsintan.id',
-        role: 'AO',
+        role: 'ANALIS',
         wilayah: 'Karawang',
         isActive: true,
       })
@@ -545,18 +545,18 @@ export function Header({ title, onMenuClick }: HeaderProps) {
                       <UserCheck size={15} /> Admin SIAP
                     </button>
                     <button
-                      onClick={() => handleSwitchUser('AO')}
+                      onClick={() => handleSwitchUser('ANALIS')}
                       className="btn btn-ghost"
                       style={{
                         width: '100%',
                         justifyContent: 'flex-start',
                         fontSize: '0.8125rem',
                         padding: '6px 8px',
-                        color: user.role === 'AO' ? '#16a34a' : '#334155',
-                        fontWeight: user.role === 'AO' ? 600 : 400,
+                        color: user.role === 'ANALIS' ? '#16a34a' : '#334155',
+                        fontWeight: user.role === 'ANALIS' ? 600 : 400,
                       }}
                     >
-                      <Users size={15} /> Budi Santoso (AO)
+                      <Users size={15} /> Budi Santoso (Analis)
                     </button>
                     <button
                       onClick={() => handleSwitchUser('MANAJEMEN')}

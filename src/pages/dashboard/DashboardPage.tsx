@@ -427,15 +427,15 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* AO Aktif */}
+        {/* Analis Aktif */}
         <div className="kpi-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
               <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#64748b' }}>
-                AO Lapangan
+                Analis Lapangan
               </span>
               <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#111827', marginTop: 6, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
-                {isLoading ? <div className="skeleton" style={{ height: 32, width: 50 }} /> : kpi?.aoAktif || 1}
+                {isLoading ? <div className="skeleton" style={{ height: 32, width: 50 }} /> : kpi?.analisAktif || 1}
               </div>
             </div>
             <div
@@ -455,7 +455,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Account Officer</span>
+            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Analis</span>
             <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#be185d', background: '#fdf2f8', padding: '1px 6px', borderRadius: 4 }}>
               Aktif Budi Santoso
             </span>
@@ -855,7 +855,7 @@ export default function DashboardPage() {
               </span>
             </div>
             <p style={{ fontSize: '0.8125rem', color: '#64748b', marginTop: 2 }}>
-              Daftar prospek terakhir yang didaftarkan oleh AO di lapangan
+              Daftar prospek terakhir yang didaftarkan oleh Analis di lapangan
             </p>
           </div>
           <Link
@@ -875,7 +875,7 @@ export default function DashboardPage() {
                 <th>Gapoktan</th>
                 <th>Kecamatan</th>
                 <th>Komoditas</th>
-                <th>AO Lapangan</th>
+                <th>Analis Lapangan</th>
                 <th>Estimasi Alsintan</th>
                 <th>Status</th>
               </tr>
@@ -912,7 +912,7 @@ export default function DashboardPage() {
                           {p.komoditas}
                         </span>
                       </td>
-                      <td data-label="AO Lapangan" style={{ color: '#475569' }}>{p.namaAO}</td>
+                      <td data-label="Analis Lapangan" style={{ color: '#475569' }}>{p.namaAnalis}</td>
                       <td data-label="Estimasi Alsintan" style={{ fontSize: '0.8125rem', color: '#334155' }}>
                         {p.estimasiKebutuhan || '-'}
                       </td>

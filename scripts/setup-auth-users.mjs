@@ -1,7 +1,8 @@
 /**
  * setup-auth-users.mjs — buat sheet USERS (untuk login Google) + seed akun awal.
- * Kolom: EMAIL | NAMA | ROLE | ID_AO | STATUS
- * Role valid: ADMIN | AO | MANAJEMEN
+ * Kolom: EMAIL | NAMA | ROLE | ID_ANALIS | STATUS
+ * Role valid: ADMIN | ANALIS | MANAJEMEN
+ * (Kolom ROLE lama berisi 'AO' tetap diterima — dinormalisasi jadi 'ANALIS' di backend)
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -28,7 +29,7 @@ if (!titles.includes('USERS')) {
   console.log('Sheet USERS dibuat');
 }
 
-const HEADER = ['EMAIL', 'NAMA', 'ROLE', 'ID_AO', 'STATUS'];
+const HEADER = ['EMAIL', 'NAMA', 'ROLE', 'ID_ANALIS', 'STATUS'];
 const cur = (await request('GET', api('/values/USERS!A1:E1'), { headers: H })).json.values?.[0] || [];
 if (cur.length === 0) {
   await request('PUT', api('/values/USERS!A1?valueInputOption=RAW'), {
@@ -40,7 +41,7 @@ if (cur.length === 0) {
 
 const SEED = [
   ['admin@siap-alsintan.id', 'Admin SIAP', 'ADMIN', '', 'AKTIF'],
-  ['budi@siap-alsintan.id', 'Budi Santoso', 'AO', 'AO001', 'AKTIF'],
+  ['budi@siap-alsintan.id', 'Budi Santoso', 'ANALIS', 'AN001', 'AKTIF'],
   ['manager@siap-alsintan.id', 'Manager Pertanian', 'MANAJEMEN', '', 'AKTIF'],
 ];
 

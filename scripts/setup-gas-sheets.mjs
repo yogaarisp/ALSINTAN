@@ -1,7 +1,7 @@
 /**
  * setup-gas-sheets.mjs — SIAP ALSINTAN
  * Pastikan sheet backend Apps Script tersedia di spreadsheet baseline:
- *   DATA_PROSPEK, DATA_SURVEY, MASTER_AO (+ cek header MASTER_WILAYAH)
+ *   DATA_PROSPEK, DATA_SURVEY, MASTER_ANALIS (+ cek header MASTER_WILAYAH)
  * Idempoten: sheet yang sudah ada tidak diubah isinya.
  */
 
@@ -107,9 +107,9 @@ console.log('Sheets existing:', titles.join(', '));
 
 // 2. Definisi sheet backend
 const SCHEMAS = {
-  DATA_PROSPEK: ['ID_PROSPEK', 'ID_KECAMATAN', 'KECAMATAN', 'NAMA_GAPOKTAN', 'KOMODITAS', 'ID_AO', 'NAMA_AO', 'STATUS', 'TANGGAL', 'ESTIMASI_ALSINTAN', 'CATATAN'],
-  DATA_SURVEY: ['ID_SURVEY', 'ID_PROSPEK', 'NAMA_GAPOKTAN', 'JUMLAH_ANGGOTA', 'LUAS_SAWAH_AKTUAL', 'JENIS_ALSINTAN', 'ESTIMASI_HARGA', 'LATITUDE', 'LONGITUDE', 'ACCURACY_M', 'CATATAN', 'ID_AO', 'NAMA_AO', 'TIMESTAMP', 'STATUS'],
-  MASTER_AO: ['ID_AO', 'NAMA_AO', 'WILAYAH', 'STATUS', 'EMAIL'],
+  DATA_PROSPEK: ['ID_PROSPEK', 'ID_KECAMATAN', 'KECAMATAN', 'NAMA_GAPOKTAN', 'KOMODITAS', 'ID_ANALIS', 'NAMA_ANALIS', 'STATUS', 'TANGGAL', 'ESTIMASI_ALSINTAN', 'CATATAN'],
+  DATA_SURVEY: ['ID_SURVEY', 'ID_PROSPEK', 'NAMA_GAPOKTAN', 'JUMLAH_ANGGOTA', 'LUAS_SAWAH_AKTUAL', 'JENIS_ALSINTAN', 'ESTIMASI_HARGA', 'LATITUDE', 'LONGITUDE', 'ACCURACY_M', 'CATATAN', 'ID_ANALIS', 'NAMA_ANALIS', 'TIMESTAMP', 'STATUS'],
+  MASTER_ANALIS: ['ID_ANALIS', 'NAMA_ANALIS', 'WILAYAH', 'STATUS', 'EMAIL'],
 };
 
 const missing = Object.keys(SCHEMAS).filter((t) => !titles.includes(t));
@@ -142,16 +142,16 @@ for (const [title, headers] of Object.entries(SCHEMAS)) {
   }
 }
 
-// 4. Seed MASTER_AO minimal (baris AO001) jika kosong
-const ao = (await request('GET', api('/values/MASTER_AO!A2:E1000'), { headers: H })).json.values || [];
-if (ao.length === 0) {
-  await request('PUT', api('/values/MASTER_AO!A2?valueInputOption=USER_ENTERED'), {
+// 4. Seed MASTER_ANALIS minimal (baris AN001) jika kosong
+const analis = (await request('GET', api('/values/MASTER_ANALIS!A2:E1000'), { headers: H })).json.values || [];
+if (analis.length === 0) {
+  await request('PUT', api('/values/MASTER_ANALIS!A2?valueInputOption=USER_ENTERED'), {
     headers: H,
-    body: { values: [['AO001', 'Budi Santoso', 'Purworejo', 'AKTIF', 'budi@siap-alsintan.id']] },
+    body: { values: [['AN001', 'Budi Santoso', 'Purworejo', 'AKTIF', 'budi@siap-alsintan.id']] },
   });
-  console.log('MASTER_AO di-seed 1 baris (AO001)');
+  console.log('MASTER_ANALIS di-seed 1 baris (AN001)');
 } else {
-  console.log(`MASTER_AO berisi ${ao.length} baris`);
+  console.log(`MASTER_ANALIS berisi ${analis.length} baris`);
 }
 
 // 5. Cek header MASTER_WILAYAH utk konfirmasi mapping Code.gs

@@ -10,7 +10,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/prioritas': 'Prioritas Wilayah',
   '/prospek': 'Data Prospek',
   '/survey': 'Survey',
-  '/ao': 'Account Officer',
+  '/analis': 'Analis',
   '/monitoring': 'Monitoring',
   '/reporting': 'Reporting',
   '/sumber-data': 'Sumber Data Integrasi',

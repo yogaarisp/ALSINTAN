@@ -6,7 +6,7 @@
 // ─────────────────────────────────────────
 // ENUM: Roles
 // ─────────────────────────────────────────
-export type UserRole = 'ADMIN' | 'AO' | 'MANAJEMEN'
+export type UserRole = 'ADMIN' | 'ANALIS' | 'MANAJEMEN'
 
 // ─────────────────────────────────────────
 // ENUM: Status Prospek
@@ -90,13 +90,13 @@ export interface MasterKomoditas {
 }
 
 // ─────────────────────────────────────────
-// MASTER AO
+// MASTER ANALIS
 // PRD Section 9
 // TODO: CONFIRM EXISTING SPREADSHEET STRUCTURE
 // ─────────────────────────────────────────
-export interface MasterAO {
-  idAO: string
-  namaAO: string
+export interface MasterAnalis {
+  idAnalis: string
+  namaAnalis: string
   wilayah: string[]
   status: 'AKTIF' | 'TIDAK_AKTIF'
   email?: string
@@ -116,8 +116,8 @@ export interface DataProspek {
   kecamatan: string
   namaGapoktan: string
   komoditas: string
-  idAO: string
-  namaAO: string
+  idAnalis: string
+  namaAnalis: string
   status: StatusProspek
   tanggal: string             // ISO date string
   estimasiKebutuhan?: string  // TODO: CONFIRM format
@@ -145,8 +145,8 @@ export interface DataSurvey {
   longitude?: number
   accuracy?: number           // meter
   catatan?: string
-  idAO: string
-  namaAO: string
+  idAnalis: string
+  namaAnalis: string
   timestamp: string           // ISO datetime
   status: StatusSurvey
 }
@@ -181,7 +181,7 @@ export interface DashboardKPI {
   // TODO: CONFIRM sumber data Outstanding Kredit
   outstandingKredit?: number  // Rupiah — NC9: sumber belum dikonfirmasi
   prospekBaru: number
-  aoAktif: number
+  analisAktif: number
   // TODO: CONFIRM definisi Conversion Rate — NC10
   conversionRate?: number     // Persentase
   totalKecamatan: number
@@ -218,14 +218,14 @@ export interface PaginatedResponse<T> {
 export interface WilayahFilter {
   kecamatan?: string
   komoditas?: string
-  idAO?: string
+  idAnalis?: string
   priorityLevel?: PriorityLevel
   kabupaten?: string
 }
 
 export interface ProspekFilter {
   status?: StatusProspek
-  idAO?: string
+  idAnalis?: string
   kecamatan?: string
   komoditas?: string
   dateFrom?: string
@@ -237,7 +237,7 @@ export interface ProspekFilter {
 
 export interface SurveyFilter {
   status?: StatusSurvey
-  idAO?: string
+  idAnalis?: string
   kecamatan?: string
   dateFrom?: string
   dateTo?: string

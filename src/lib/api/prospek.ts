@@ -17,7 +17,7 @@ export async function getProspek(filter?: ProspekFilter): Promise<PaginatedRespo
     let data = [...MOCK_PROSPEK]
 
     if (filter?.status) data = data.filter((p) => p.status === filter.status)
-    if (filter?.idAO) data = data.filter((p) => p.idAO === filter.idAO)
+    if (filter?.idAnalis) data = data.filter((p) => p.idAnalis === filter.idAnalis)
     if (filter?.kecamatan) data = data.filter((p) => p.kecamatan.toLowerCase().includes(filter.kecamatan!.toLowerCase()))
     if (filter?.search) {
       const q = filter.search.toLowerCase()
@@ -40,7 +40,7 @@ export async function getProspek(filter?: ProspekFilter): Promise<PaginatedRespo
   try {
     const res = await gasGet<PaginatedResponse<DataProspek>>('getProspek', {
       status: filter?.status,
-      idAO: filter?.idAO,
+      idAnalis: filter?.idAnalis,
       kecamatan: filter?.kecamatan,
       komoditas: filter?.komoditas,
       dateFrom: filter?.dateFrom,
@@ -80,8 +80,8 @@ export async function createProspek(form: CreateProspekForm): Promise<DataProspe
       idProspek: `P${Date.now()}`,
       kecamatan: form.idKecamatan, // akan di-resolve dari master wilayah
       ...form,
-      idAO: 'AO001', // akan diisi dari auth session
-      namaAO: 'Budi Santoso',
+      idAnalis: 'AN001', // akan diisi dari auth session
+      namaAnalis: 'Budi Santoso',
       status: 'BARU',
       tanggal: new Date().toISOString().split('T')[0],
     }

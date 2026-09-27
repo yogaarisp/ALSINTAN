@@ -8,7 +8,7 @@
 
 import type {
   MasterWilayah,
-  MasterAO,
+  MasterAnalis,
   MasterKomoditas,
   DataProspek,
   DataSurvey,
@@ -27,12 +27,12 @@ export const MOCK_KOMODITAS: MasterKomoditas[] = [
 ]
 
 // ─────────────────────────────────────────
-// MOCK: AO
+// MOCK: ANALIS
 // ─────────────────────────────────────────
-export const MOCK_AO: MasterAO[] = [
+export const MOCK_ANALIS: MasterAnalis[] = [
   {
-    idAO: 'AO001',
-    namaAO: 'Budi Santoso',
+    idAnalis: 'AN001',
+    namaAnalis: 'Budi Santoso',
     wilayah: ['Kec. Cikampek', 'Kec. Purwasari', 'Kec. Tegalwaru'],
     status: 'AKTIF',
     email: 'budi@siap-alsintan.id',
@@ -40,8 +40,8 @@ export const MOCK_AO: MasterAO[] = [
     totalSurvey: 18,
   },
   {
-    idAO: 'AO002',
-    namaAO: 'Siti Rahayu',
+    idAnalis: 'AN002',
+    namaAnalis: 'Siti Rahayu',
     wilayah: ['Kec. Karawang Barat', 'Kec. Karawang Timur'],
     status: 'AKTIF',
     email: 'siti@siap-alsintan.id',
@@ -49,8 +49,8 @@ export const MOCK_AO: MasterAO[] = [
     totalSurvey: 12,
   },
   {
-    idAO: 'AO003',
-    namaAO: 'Ahmad Fauzi',
+    idAnalis: 'AN003',
+    namaAnalis: 'Ahmad Fauzi',
     wilayah: ['Kec. Telukjambe Barat', 'Kec. Telukjambe Timur'],
     status: 'AKTIF',
     email: 'ahmad@siap-alsintan.id',
@@ -164,8 +164,8 @@ export const MOCK_PROSPEK: DataProspek[] = [
     kecamatan: 'Cikampek',
     namaGapoktan: 'Gapoktan Maju Bersama',
     komoditas: 'Padi',
-    idAO: 'AO001',
-    namaAO: 'Budi Santoso',
+    idAnalis: 'AN001',
+    namaAnalis: 'Budi Santoso',
     status: 'POTENSIAL',
     tanggal: '2026-07-15',
     estimasiKebutuhan: 'Combine Harvester 2 unit',
@@ -177,8 +177,8 @@ export const MOCK_PROSPEK: DataProspek[] = [
     kecamatan: 'Cikampek',
     namaGapoktan: 'Gapoktan Tani Sejahtera',
     komoditas: 'Padi',
-    idAO: 'AO001',
-    namaAO: 'Budi Santoso',
+    idAnalis: 'AN001',
+    namaAnalis: 'Budi Santoso',
     status: 'SURVEY',
     tanggal: '2026-07-20',
     estimasiKebutuhan: 'Rice Transplanter 1 unit',
@@ -190,8 +190,8 @@ export const MOCK_PROSPEK: DataProspek[] = [
     kecamatan: 'Purwasari',
     namaGapoktan: 'Kelompok Tani Harapan',
     komoditas: 'Jagung',
-    idAO: 'AO001',
-    namaAO: 'Budi Santoso',
+    idAnalis: 'AN001',
+    namaAnalis: 'Budi Santoso',
     status: 'DALAM_PROSPEK',
     tanggal: '2026-08-01',
     estimasiKebutuhan: 'Corn Sheller 1 unit',
@@ -203,8 +203,8 @@ export const MOCK_PROSPEK: DataProspek[] = [
     kecamatan: 'Karawang Barat',
     namaGapoktan: 'Gapoktan Subur Makmur',
     komoditas: 'Padi',
-    idAO: 'AO002',
-    namaAO: 'Siti Rahayu',
+    idAnalis: 'AN002',
+    namaAnalis: 'Siti Rahayu',
     status: 'BARU',
     tanggal: '2026-08-10',
     estimasiKebutuhan: 'Traktor Roda 2, 3 unit',
@@ -216,8 +216,8 @@ export const MOCK_PROSPEK: DataProspek[] = [
     kecamatan: 'Telukjambe Timur',
     namaGapoktan: 'Gapoktan Padi Emas',
     komoditas: 'Padi',
-    idAO: 'AO003',
-    namaAO: 'Ahmad Fauzi',
+    idAnalis: 'AN003',
+    namaAnalis: 'Ahmad Fauzi',
     status: 'CLOSING',
     tanggal: '2026-06-01',
     estimasiKebutuhan: 'Combine Harvester 3 unit',
@@ -242,8 +242,8 @@ export const MOCK_SURVEY: DataSurvey[] = [
     longitude: 107.4567,
     accuracy: 5,
     catatan: 'Lahan datar, akses bagus',
-    idAO: 'AO001',
-    namaAO: 'Budi Santoso',
+    idAnalis: 'AN001',
+    namaAnalis: 'Budi Santoso',
     timestamp: '2026-07-16T09:30:00Z',
     status: 'SURVEY_SELESAI',
   },
@@ -257,7 +257,7 @@ export const MOCK_SURVEY: DataSurvey[] = [
 export const MOCK_DASHBOARD_KPI: DashboardKPI = {
   outstandingKredit: undefined, // NC9: sumber belum dikonfirmasi
   prospekBaru: 8,
-  aoAktif: 3,
+  analisAktif: 3,
   conversionRate: undefined,    // NC10: definisi belum dikonfirmasi
   totalKecamatan: 8,
   totalGapoktan: 229,

@@ -10,7 +10,11 @@
     "preview": "vite preview",
     "sync:lbs": "node scripts/sync-lbs.js",
     "sync:excel": "node scripts/sync-excel-folder.js",
-    "gas:deploy": "node scripts/deploy-gas.mjs"
+    "gas:deploy": "node scripts/deploy-gas.mjs",
+    "gas:verify": "node scripts/verify-gas.mjs",
+    "gas:grant": "node scripts/grant-access.mjs",
+    "gas:backup": "node scripts/backup-all-sheets.mjs",
+    "migrate:analis": "node scripts/migrate-ao-to-analis.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

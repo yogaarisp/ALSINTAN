@@ -9,8 +9,11 @@
  * DI DALAM folder Drive milikmu yang di-share ke SA (storage dihitung ke akunmu).
  *
  * Usage:
- *   node scripts/sync-excel-folder.js --scan          # inventaris isi excel/ saja
- *   node scripts/sync-excel-folder.js                 # buat/update spreadsheet per file
+ *   node scripts/sync-excel-folder.js --scan            # inventaris isi excel/ saja
+ *   node scripts/sync-excel-folder.js                   # buat/update spreadsheet per file
+ *   node scripts/sync-excel-folder.js --dir=excel/backup-2026-09-26
+ *                                                      # sumber xlsx dari folder lain
+ *   node scripts/sync-excel-folder.js --include-hidden    # ikut konversi tab tersembunyi
  *
  * Env (.env.local):
  *   GOOGLE_SERVICE_ACCOUNT_JSON   path JSON service account (wajib)
@@ -34,8 +37,14 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const SCAN = process.argv.includes('--scan');
-const SKIP_FILES = ['LBS  PER DESA fIX.xlsx'];
-const EXCEL_DIR = path.join(ROOT, 'excel');
+// Tab tersembunyi (LTAWAL, REKAP) default-nya dilewati. Pakai --include-hidden
+// bila struktur spreadsheet harus sama persis dengan aslinya.
+const INCLUDE_HIDDEN = process.argv.includes('--include-hidden');
+const SKIP_FILES = ['LBS  PER DESA fIX.xlsx', '_manifest.json'];
+// --dir=excel/backup-2026-09-26 untuk memakai salinan backup (lebih lengkap
+// daripada file asli di excel/, karena itu hasil export dari Google Sheets)
+const DIR_ARG = (process.argv.find((a) => a.startsWith('--dir=')) || '').slice(6);
+const EXCEL_DIR = path.resolve(ROOT, DIR_ARG || 'excel');
 
 loadDotEnv(path.join(ROOT, '.env.local'));
 loadDotEnv(path.join(ROOT, '.env'));
@@ -191,9 +200,9 @@ async function main() {
     }
 
     const sheets = loadWorkbook(path.join(EXCEL_DIR, f));
-    const visible = sheets.filter((s) => s.state === 'visible' && s.nonEmpty > 0);
-    const hidden = sheets.filter((s) => s.state !== 'visible');
-    const empty = sheets.filter((s) => s.state === 'visible' && s.nonEmpty === 0);
+    const visible = sheets.filter((s) => (INCLUDE_HIDDEN || s.state === 'visible') && s.nonEmpty > 0);
+    const hidden = sheets.filter((s) => !INCLUDE_HIDDEN && s.state !== 'visible');
+    const empty = sheets.filter((s) => !INCLUDE_HIDDEN && s.state === 'visible' && s.nonEmpty === 0);
 
     const meta = (await request('GET', `${SHEETS}/${ssId}`, { headers: auth })).json;
     const have = new Set(meta.sheets.map((s) => s.properties.title));

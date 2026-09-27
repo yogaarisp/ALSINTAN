@@ -5,7 +5,9 @@
 // tampil dalam 0 milidetik (tanpa menunggu latency Apps Script ~3 detik)
 // ============================================================
 
-const CACHE_PREFIX = 'siap_cache_'
+// v2: rename AO -> Analis (idAO/namaAO jadi idAnalis/namaAnalis).
+// Prefix dinaikkan agar cache lama yang masih memakai field AO tidak terpakai lagi.
+const CACHE_PREFIX = 'siap_v2_'
 
 export function getLocalCache<T>(key: string, fallback?: T): T | undefined {
   if (typeof window === 'undefined') return fallback

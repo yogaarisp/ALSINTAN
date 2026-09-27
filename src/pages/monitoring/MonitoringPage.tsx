@@ -17,11 +17,11 @@ import {
 } from 'lucide-react'
 import { getWilayah } from '@/lib/api/wilayah'
 import { getProspek } from '@/lib/api/prospek'
-import { getAO } from '@/lib/api/ao'
+import { getAnalis } from '@/lib/api/analis'
 import { rankWilayah } from '@/lib/services/priority-engine'
 import { getLocalCache } from '@/lib/utils/cache'
-import { MOCK_WILAYAH, MOCK_PROSPEK, MOCK_AO } from '@/lib/mock/mock-data'
-import type { MasterWilayah, MasterAO } from '@/lib/types'
+import { MOCK_WILAYAH, MOCK_PROSPEK, MOCK_ANALIS } from '@/lib/mock/mock-data'
+import type { MasterWilayah, MasterAnalis } from '@/lib/types'
 
 export default function MonitoringPage() {
   const { data: wilayahList = [] } = useQuery({
@@ -45,10 +45,10 @@ export default function MonitoringPage() {
     initialDataUpdatedAt: 0,
   })
 
-  const { data: aoList = [] } = useQuery({
-    queryKey: ['ao'],
-    queryFn: getAO,
-    initialData: () => getLocalCache<MasterAO[]>('ao_all') ?? MOCK_AO,
+  const { data: analisList = [] } = useQuery({
+    queryKey: ['analis'],
+    queryFn: getAnalis,
+    initialData: () => getLocalCache<MasterAnalis[]>('analis_all') ?? MOCK_ANALIS,
     initialDataUpdatedAt: 0,
   })
 
@@ -65,15 +65,15 @@ export default function MonitoringPage() {
     }
   })
 
-  // AO Performance table data
-  const aoStats = aoList.map((ao) => {
+  // Analis Performance table data
+  const analisStats = analisList.map((analis) => {
     const prospeks = (prospekData?.items || []).filter(
-      (p) => p.idAO === ao.idAO || p.namaAO === ao.namaAO
+      (p) => p.idAnalis === analis.idAnalis || p.namaAnalis === analis.namaAnalis
     )
     const closing = prospeks.filter((p) => p.status === 'CLOSING').length
     const survey = prospeks.filter((p) => p.status === 'SURVEY' || p.status === 'POTENSIAL').length
     return {
-      ...ao,
+      ...analis,
       totalProspek: prospeks.length,
       surveyCount: survey,
       closingCount: closing,
@@ -81,7 +81,7 @@ export default function MonitoringPage() {
     }
   })
 
-  const isLoading = wilayahList.length === 0 && aoList.length === 0
+  const isLoading = wilayahList.length === 0 && analisList.length === 0
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -89,7 +89,7 @@ export default function MonitoringPage() {
       <div className="dev-banner">
         <Sparkles size={16} />
         <div>
-          <strong>Dashboard Monitoring & Evaluasi Manajemen (Fase 1):</strong> Membandingkan data potensi awal wilayah (Dinas Pertanian) dengan realisasi prospek/survey aktual lapangan oleh AO.
+          <strong>Dashboard Monitoring & Evaluasi Manajemen (Fase 1):</strong> Membandingkan data potensi awal wilayah (Dinas Pertanian) dengan realisasi prospek/survey aktual lapangan oleh Analis.
         </div>
       </div>
 
@@ -99,7 +99,7 @@ export default function MonitoringPage() {
           <div>
             <h1 className="page-title">Monitoring & Evaluasi Manajemen</h1>
             <p className="page-subtitle">
-              Evaluasi kinerja AO, perbandingan potensi baseline vs data lapangan, dan ringkasan eksekutif
+              Evaluasi kinerja Analis, perbandingan potensi baseline vs data lapangan, dan ringkasan eksekutif
             </p>
           </div>
           {/* Looker Studio integration per PRD Section 19 */}
@@ -157,12 +157,12 @@ export default function MonitoringPage() {
         </div>
       </div>
 
-      {/* Comparison Chart: Baseline Dinas Pertanian vs Aktual Prospek AO (PRD Section 4.3 & 6H) */}
+      {/* Comparison Chart: Baseline Dinas Pertanian vs Aktual Prospek Analis (PRD Section 4.3 & 6H) */}
       <div className="card">
         <div className="card-header">
           <div>
             <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
-              Evaluasi: Potensi Wilayah (Dinas) vs Realisasi Prospek (AO)
+              Evaluasi: Potensi Wilayah (Dinas) vs Realisasi Prospek (Analis)
             </h2>
             <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>
               Membandingkan total jumlah Gapoktan terdaftar di Dinas dengan jumlah Gapoktan yang telah diprospek
@@ -180,19 +180,19 @@ export default function MonitoringPage() {
                 <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0' }} />
                 <Legend wrapperStyle={{ paddingTop: 10 }} />
                 <Bar name="Total Gapoktan Baseline (Dinas)" dataKey="baselineGapoktan" fill="#94a3b8" radius={[4, 4, 0, 0]} />
-                <Bar name="Prospek Aktif Lapangan (AO)" dataKey="actualProspek" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                <Bar name="Prospek Aktif Lapangan (Analis)" dataKey="actualProspek" fill="#16a34a" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
         </div>
       </div>
 
-      {/* Monitoring Kinerja AO */}
+      {/* Monitoring Kinerja Analis */}
       <div className="card">
         <div className="card-header">
           <div>
             <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
-              Monitoring Kinerja Account Officer (AO)
+              Monitoring Kinerja Analis
             </h2>
             <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>
               Statistik prospek, survey lapangan, dan tingkat konversi per petugas
@@ -203,9 +203,9 @@ export default function MonitoringPage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Nama AO</th>
+                <th>Nama Analis</th>
                 <th>Wilayah Penugasan</th>
-                <th>Status AO</th>
+                <th>Status Analis</th>
                 <th>Total Prospek</th>
                 <th>Survey / Potensial</th>
                 <th>Closing</th>
@@ -221,23 +221,23 @@ export default function MonitoringPage() {
                     </td>
                   </tr>
                 ))
-              ) : aoStats.map((ao) => (
-                <tr key={ao.idAO}>
-                  <td data-label="Nama AO" style={{ fontWeight: 700, color: '#0f172a' }}>{ao.namaAO}</td>
-                  <td data-label="Wilayah Penugasan" style={{ fontSize: '0.8125rem' }}>{ao.wilayah?.join(', ')}</td>
-                  <td data-label="Status AO">
+              ) : analisStats.map((analis) => (
+                <tr key={analis.idAnalis}>
+                  <td data-label="Nama Analis" style={{ fontWeight: 700, color: '#0f172a' }}>{analis.namaAnalis}</td>
+                  <td data-label="Wilayah Penugasan" style={{ fontSize: '0.8125rem' }}>{analis.wilayah?.join(', ')}</td>
+                  <td data-label="Status Analis">
                     <span className="badge" style={{ background: '#f0fdf4', color: '#16a34a', borderColor: '#bbf7d0' }}>
-                      {ao.status}
+                      {analis.status}
                     </span>
                   </td>
-                  <td data-label="Total Prospek" style={{ fontWeight: 600 }}>{ao.totalProspek}</td>
-                  <td data-label="Survey / Potensial">{ao.surveyCount}</td>
-                  <td data-label="Closing" style={{ fontWeight: 700, color: '#16a34a' }}>{ao.closingCount}</td>
+                  <td data-label="Total Prospek" style={{ fontWeight: 600 }}>{analis.totalProspek}</td>
+                  <td data-label="Survey / Potensial">{analis.surveyCount}</td>
+                  <td data-label="Closing" style={{ fontWeight: 700, color: '#16a34a' }}>{analis.closingCount}</td>
                   <td data-label="Conversion Rate">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontWeight: 600, fontSize: '0.8125rem' }}>{ao.conversionRate}%</span>
+                      <span style={{ fontWeight: 600, fontSize: '0.8125rem' }}>{analis.conversionRate}%</span>
                       <div className="score-bar" style={{ width: 60 }}>
-                        <div className="score-bar-fill bg-green-500" style={{ width: `${ao.conversionRate}%` }} />
+                        <div className="score-bar-fill bg-green-500" style={{ width: `${analis.conversionRate}%` }} />
                       </div>
                     </div>
                   </td>

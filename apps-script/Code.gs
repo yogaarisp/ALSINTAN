@@ -6,12 +6,12 @@
  *         Execute as: Me | Who has access: Anyone
  *
  * Kontrak API: lihat API.md (response wrapper { success, data, error, timestamp })
- * Action GET  : ping, getDashboardKPI, getWilayah, getProspek, getAO, getSurvey
- * Action POST : createProspek, createSurvey, createAO, updateAOStatus
+ * Action GET  : ping, getDashboardKPI, getWilayah, getProspek, getAnalis, getSurvey
+ * Action POST : createProspek, createSurvey, createAnalis, updateAnalisStatus, authCheck
  * Catatan POST: frontend mengirim Content-Type text/plain (hindari preflight CORS)
  */
 
-var SPREADSHEET_ID = '1o46DOJyyd9ghgqgBqfMR2_QRj-sNcnK6H9c8cFnxGdg';
+var SPREADSHEET_ID = '1EZ3XYXRaCkJmHhLbhVkrzKqcFrtcN7DX3k7BNZc20F4';
 var TZ = 'Asia/Jakarta';
 
 var SHEETS = {
@@ -19,18 +19,18 @@ var SHEETS = {
   DESA: 'MASTER_DESA',
   PROSPEK: 'DATA_PROSPEK',
   SURVEY: 'DATA_SURVEY',
-  AO: 'MASTER_AO',
+  ANALIS: 'MASTER_ANALIS',
   USERS: 'USERS',
 };
 
 // Spreadsheet sumber lain di folder ALSINTAN — dibaca live oleh web (read-only)
 var SOURCES = [
-  { key: 'poktan', nama: 'Poktan 2026', kategori: 'Gapoktan', id: '1qyRZ2St8k8pB2f0YlA6JTjXEHTYEL8dyLCm3NqrHBOU' },
-  { key: 'padi_sawah', nama: 'Produksi Padi Sawah 2025', kategori: 'Produksi', id: '1qiP1pYHlo-dHEaelhPwSqletw09xGqAGR5xjDWHaXlA' },
-  { key: 'padi_ladang', nama: 'Produksi Padi Ladang 2025', kategori: 'Produksi', id: '18NAxNkcXtFcseYut-ghtjw3kgiZf0IFjRan663j6Q0M' },
-  { key: 'beras', nama: 'Produksi Beras 2025', kategori: 'Produksi', id: '1eFhHC22k0zOSiODB4NvKlwBYI8Mk27x29fNnLvFx6ec' },
-  { key: 'rekap_alsintan', nama: 'Rekap Alsintan s.d. April 2026', kategori: 'Alsintan', id: '1T8lNnB8KLe9Ri0osKirOB_Sk6a8UKqkAnPZ7936i4w4' },
-  { key: 'rekap_bulanan', nama: 'Rekap Bulanan SP TP', kategori: 'SP TP', id: '1yyVQbpWPXRmcfbTS7XVDdrlRth1y_4W5Ow8GyVTfyWM' },
+  { key: 'poktan', nama: 'Poktan 2026', kategori: 'Gapoktan', id: '1xd4G2iCUBvyqUwuTni3anBOJhoQwmb-TNW1qOE4YBzg' },
+  { key: 'padi_sawah', nama: 'Produksi Padi Sawah 2025', kategori: 'Produksi', id: '1NEEZarMvHL11z2rXx0dS31KuiI0tAMJCIH_b11eYFQo' },
+  { key: 'padi_ladang', nama: 'Produksi Padi Ladang 2025', kategori: 'Produksi', id: '1G3x0B9Oxi4rfMoWTBJ3Ie-rIL2-dCrPV9vlh0BahvqQ' },
+  { key: 'beras', nama: 'Produksi Beras 2025', kategori: 'Produksi', id: '1s41NFQjZBdlQWW_6d-NBNMnEkYLufyf-Z-bCgaxOiC4' },
+  { key: 'rekap_alsintan', nama: 'Rekap Alsintan s.d. April 2026', kategori: 'Alsintan', id: '1z5zDzvksX5xT6C_OvM_Kv_cFYPuGdOPvAKxsxp7LBoY' },
+  { key: 'rekap_bulanan', nama: 'Rekap Bulanan SP TP', kategori: 'SP TP', id: '1DzlqupA0M-6Ehs6QSwTo_o7oU_g7uVYROCSr8aiuzt8' },
 ];
 
 // ----------------------------------------------------------- entry points
@@ -63,14 +63,18 @@ function handle(p) {
       case 'getWilayah': data = apiGetWilayah(p); break;
       case 'getProspek': data = apiGetProspek(p); break;
       case 'getSurvey': data = apiGetSurvey(p); break;
-      case 'getAO': data = apiGetAO(); break;
+      case 'getAnalis': data = apiGetAnalis(); break;
       case 'getSources': data = apiGetSources(); break;
       case 'getSourceData': data = apiGetSourceData(p); break;
       case 'createProspek': data = apiCreateProspek(p); break;
       case 'createSurvey': data = apiCreateSurvey(p); break;
-      case 'createAO': data = apiCreateAO(p); break;
-      case 'updateAOStatus': data = apiUpdateAOStatus(p); break;
+      case 'createAnalis': data = apiCreateAnalis(p); break;
+      case 'updateAnalisStatus': data = apiUpdateAnalisStatus(p); break;
       case 'authCheck': data = apiAuthCheck(p); break;
+      // Alias lama (AO) — tetap dilayani agar tab browser lama tidak error saat deploy
+      case 'getAO': data = apiGetAnalis(); break;
+      case 'createAO': data = apiCreateAnalis(p); break;
+      case 'updateAOStatus': data = apiUpdateAnalisStatus(p); break;
       default: return json({ success: false, error: 'Unknown action: ' + action });
     }
     return json({ success: true, data: data, timestamp: new Date().toISOString() });
@@ -90,7 +94,7 @@ function json(obj) {
 // Smoke test untuk otorisasi: jalankan sekali dari editor (Run)
 function setup() {
   var log = [];
-  [SHEETS.WILAYAH, SHEETS.PROSPEK, SHEETS.SURVEY, SHEETS.AO].forEach(function (name) {
+  [SHEETS.WILAYAH, SHEETS.PROSPEK, SHEETS.SURVEY, SHEETS.ANALIS].forEach(function (name) {
     log.push(name + ': ' + readRows(name).length + ' baris');
   });
   Logger.log(log.join('\n'));
@@ -139,12 +143,39 @@ function splitList(v) {
     .filter(function (s) { return s !== ''; });
 }
 
-function readRows(name) {
+// Alias nama tab lama -> dipakai sebagai fallback supaya urutan deploy
+// (spreadsheet lebih dulu vs Apps Script lebih dulu) tidak berpengaruh.
+var SHEET_ALIAS = {
+  MASTER_ANALIS: ['MASTER_AO'],
+};
+
+// Alias nama kolom lama -> kolom baru. Header dinormalisasi saat baca baris,
+// sehingga spreadsheet yang belum dimigrasi tetap bisa dibaca.
+var HEADER_ALIAS = {
+  ID_AO: 'ID_ANALIS',
+  NAMA_AO: 'NAMA_ANALIS',
+};
+
+function getSheet(name) {
   var sheet = ss().getSheetByName(name);
+  if (sheet) return sheet;
+  var aliases = SHEET_ALIAS[name] || [];
+  for (var i = 0; i < aliases.length; i++) {
+    var alt = ss().getSheetByName(aliases[i]);
+    if (alt) return alt;
+  }
+  return null;
+}
+
+function readRows(name) {
+  var sheet = getSheet(name);
   if (!sheet) throw new Error('Sheet tidak ditemukan: ' + name);
   var values = sheet.getDataRange().getValues();
   if (values.length < 2) return [];
-  var header = values[0].map(function (h) { return str(h).toUpperCase(); });
+  var header = values[0].map(function (h) {
+    var key = str(h).toUpperCase();
+    return HEADER_ALIAS[key] || key;
+  });
   var rows = [];
   for (var i = 1; i < values.length; i++) {
     var row = values[i];
@@ -175,7 +206,8 @@ function nextId(sheetName, idColumn, prefix) {
 }
 
 function appendRow(sheetName, headers, obj) {
-  var sheet = ss().getSheetByName(sheetName);
+  var sheet = getSheet(sheetName);
+  if (!sheet) throw new Error('Sheet tidak ditemukan: ' + sheetName);
   var row = headers.map(function (h) {
     var v = obj[h];
     if (v === undefined || v === null) return '';
@@ -207,8 +239,8 @@ function mapProspek(r) {
     kecamatan: str(r['KECAMATAN']),
     namaGapoktan: str(r['NAMA_GAPOKTAN']),
     komoditas: str(r['KOMODITAS']),
-    idAO: str(r['ID_AO']),
-    namaAO: str(r['NAMA_AO']),
+    idAnalis: str(r['ID_ANALIS']),
+    namaAnalis: str(r['NAMA_ANALIS']),
     status: str(r['STATUS']),
     tanggal: dateStr(r['TANGGAL']),
     estimasiKebutuhan: str(r['ESTIMASI_ALSINTAN']),
@@ -229,18 +261,18 @@ function mapSurvey(r) {
     longitude: num(r['LONGITUDE']),
     accuracy: num(r['ACCURACY_M']),
     catatan: str(r['CATATAN']),
-    idAO: str(r['ID_AO']),
-    namaAO: str(r['NAMA_AO']),
+    idAnalis: str(r['ID_ANALIS']),
+    namaAnalis: str(r['NAMA_ANALIS']),
     timestamp: isoStr(r['TIMESTAMP']),
     status: str(r['STATUS']),
     fotoUrl: str(r['FOTO_URL']),
   };
 }
 
-function mapAO(r) {
+function mapAnalis(r) {
   return {
-    idAO: str(r['ID_AO']),
-    namaAO: str(r['NAMA_AO']),
+    idAnalis: str(r['ID_ANALIS']),
+    namaAnalis: str(r['NAMA_ANALIS']),
     wilayah: splitList(r['WILAYAH']),
     status: str(r['STATUS']),
     email: str(r['EMAIL']),
@@ -250,8 +282,8 @@ function mapAO(r) {
 // ----------------------------------------------------------- read actions
 function getDashboardKPI() {
   var wil = readRows(SHEETS.WILAYAH).map(mapWilayah);
-  var prosp = readRows(SHEETS.PROSPEK).map(mapProspek);
-  var ao = readRows(SHEETS.AO).map(mapAO);
+  var prospek = readRows(SHEETS.PROSPEK).map(mapProspek);
+  var analis = readRows(SHEETS.ANALIS).map(mapAnalis);
   var totalLuasLahan = 0;
   var totalGapoktan = 0;
   wil.forEach(function (w) {
@@ -262,8 +294,8 @@ function getDashboardKPI() {
     totalKecamatan: wil.length,
     totalGapoktan: Math.round(totalGapoktan),
     totalLuasLahan: Math.round(totalLuasLahan * 100) / 100,
-    prospekBaru: prosp.filter(function (p) { return p.status === 'BARU'; }).length,
-    aoAktif: ao.filter(function (a) { return a.status === 'AKTIF'; }).length,
+    prospekBaru: prospek.filter(function (p) { return p.status === 'BARU'; }).length,
+    analisAktif: analis.filter(function (a) { return a.status === 'AKTIF'; }).length,
   };
 }
 
@@ -312,7 +344,7 @@ function apiGetProspek(p) {
     return data.filter(function (x) { return x.idProspek === str(p.idProspek); })[0] || null;
   }
   if (p.status) data = data.filter(function (x) { return x.status === str(p.status); });
-  if (p.idAO) data = data.filter(function (x) { return x.idAO === str(p.idAO); });
+  if (p.idAnalis) data = data.filter(function (x) { return x.idAnalis === str(p.idAnalis); });
   if (p.komoditas) data = data.filter(function (x) { return x.komoditas === str(p.komoditas); });
   if (p.kecamatan) {
     var kc = str(p.kecamatan).toLowerCase();
@@ -339,24 +371,31 @@ function apiGetSurvey(p) {
   }
   if (p.idProspek) data = data.filter(function (x) { return x.idProspek === str(p.idProspek); });
   if (p.status) data = data.filter(function (x) { return x.status === str(p.status); });
-  if (p.idAO) data = data.filter(function (x) { return x.idAO === str(p.idAO); });
+  if (p.idAnalis) data = data.filter(function (x) { return x.idAnalis === str(p.idAnalis); });
   data.sort(function (a, b) { return a.idSurvey < b.idSurvey ? -1 : 1; });
   return paginate(data, p);
 }
 
-function apiGetAO() {
-  var ao = readRows(SHEETS.AO).map(mapAO);
-  var prosp = readRows(SHEETS.PROSPEK);
-  var surv = readRows(SHEETS.SURVEY);
-  ao.forEach(function (a) {
-    a.totalProspek = prosp.filter(function (r) { return str(r['ID_AO']) === a.idAO; }).length;
-    a.totalSurvey = surv.filter(function (r) { return str(r['ID_AO']) === a.idAO; }).length;
+function apiGetAnalis() {
+  var analis = readRows(SHEETS.ANALIS).map(mapAnalis);
+  var prospek = readRows(SHEETS.PROSPEK);
+  var survey = readRows(SHEETS.SURVEY);
+  analis.forEach(function (a) {
+    a.totalProspek = prospek.filter(function (r) { return str(r['ID_ANALIS']) === a.idAnalis; }).length;
+    a.totalSurvey = survey.filter(function (r) { return str(r['ID_ANALIS']) === a.idAnalis; }).length;
   });
-  ao.sort(function (x, y) { return x.idAO < y.idAO ? -1 : 1; });
-  return ao;
+  analis.sort(function (x, y) { return x.idAnalis < y.idAnalis ? -1 : 1; });
+  return analis;
 }
 
 // ----------------------------------------------------------- auth
+// Normalisasi role: sheet USERS masih bisa berisi 'AO' (penamaan lama) -> 'ANALIS'
+function normalisasiRole(v) {
+  var r = str(v).toUpperCase();
+  if (r === 'AO' || r === 'ACCOUNT OFFICER') return 'ANALIS';
+  return r;
+}
+
 // Login Google: verifikasi email terdaftar di sheet USERS
 function apiAuthCheck(p) {
   var email = str(p.email).toLowerCase();
@@ -372,8 +411,8 @@ function apiAuthCheck(p) {
   return {
     email: email,
     nama: str(found['NAMA']),
-    role: str(found['ROLE']),
-    idAO: str(found['ID_AO']),
+    role: normalisasiRole(found['ROLE']),
+    idAnalis: str(found['ID_ANALIS']) || str(found['ID_AO']),
   };
 }
 
@@ -384,16 +423,16 @@ function apiCreateProspek(p) {
   }
   var wil = apiGetWilayah({ idKecamatan: str(p.idKecamatan) });
   if (!wil) throw new Error('idKecamatan tidak dikenal: ' + str(p.idKecamatan));
-  var idAO = str(p.idAO) || 'AO001';
-  var ao = readRows(SHEETS.AO).map(mapAO).filter(function (a) { return a.idAO === idAO; })[0];
+  var idAnalis = str(p.idAnalis) || 'AN001';
+  var analis = readRows(SHEETS.ANALIS).map(mapAnalis).filter(function (a) { return a.idAnalis === idAnalis; })[0];
   var obj = {
     'ID_PROSPEK': nextId(SHEETS.PROSPEK, 'ID_PROSPEK', 'P'),
     'ID_KECAMATAN': wil.idKecamatan,
     'KECAMATAN': wil.kecamatan,
     'NAMA_GAPOKTAN': str(p.namaGapoktan),
     'KOMODITAS': str(p.komoditas) || 'Padi',
-    'ID_AO': idAO,
-    'NAMA_AO': ao ? ao.namaAO : str(p.namaAO) || 'Budi Santoso',
+    'ID_ANALIS': idAnalis,
+    'NAMA_ANALIS': analis ? analis.namaAnalis : str(p.namaAnalis) || 'Budi Santoso',
     'STATUS': str(p.status) || 'BARU',
     'TANGGAL': str(p.tanggal) || Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'),
     'ESTIMASI_ALSINTAN': str(p.estimasiKebutuhan),
@@ -424,8 +463,8 @@ function apiCreateSurvey(p) {
     'LONGITUDE': num(p.longitude),
     'ACCURACY_M': num(p.accuracy),
     'CATATAN': str(p.catatan),
-    'ID_AO': str(p.idAO) || prosp.idAO,
-    'NAMA_AO': str(p.namaAO) || prosp.namaAO,
+    'ID_ANALIS': str(p.idAnalis) || prosp.idAnalis,
+    'NAMA_ANALIS': str(p.namaAnalis) || prosp.namaAnalis,
     'TIMESTAMP': str(p.timestamp) || new Date().toISOString(),
     'STATUS': str(p.status) || 'SURVEY_SELESAI',
     'FOTO_URL': fotoUrl,
@@ -450,17 +489,17 @@ function saveFotoSurvey(base64, fileName, idSurvey) {
   return file.getUrl();
 }
 
-function apiCreateAO(p) {
-  if (!str(p.namaAO)) throw new Error('namaAO wajib diisi');
+function apiCreateAnalis(p) {
+  if (!str(p.namaAnalis)) throw new Error('namaAnalis wajib diisi');
   var obj = {
-    'ID_AO': str(p.idAO) || nextId(SHEETS.AO, 'ID_AO', 'AO'),
-    'NAMA_AO': str(p.namaAO),
+    'ID_ANALIS': str(p.idAnalis) || nextId(SHEETS.ANALIS, 'ID_ANALIS', 'AN'),
+    'NAMA_ANALIS': str(p.namaAnalis),
     'WILAYAH': Array.isArray(p.wilayah) ? p.wilayah.join(', ') : str(p.wilayah),
     'STATUS': str(p.status) || 'AKTIF',
     'EMAIL': str(p.email),
   };
-  appendRow(SHEETS.AO, Object.keys(obj), obj);
-  return mapAO(obj);
+  appendRow(SHEETS.ANALIS, Object.keys(obj), obj);
+  return mapAnalis(obj);
 }
 
 // ----------------------------------------------------------- source actions
@@ -580,16 +619,17 @@ function apiGetSourceData(p) {
   };
 }
 
-function apiUpdateAOStatus(p) {
-  var idAO = str(p.idAO);
+function apiUpdateAnalisStatus(p) {
+  var idAnalis = str(p.idAnalis);
   var status = str(p.status) || 'AKTIF';
-  var rows = readRows(SHEETS.AO);
+  var rows = readRows(SHEETS.ANALIS);
   var target = null;
   rows.forEach(function (r) {
-    if (str(r['ID_AO']) === idAO) target = r;
+    if (str(r['ID_ANALIS']) === idAnalis) target = r;
   });
-  if (!target) throw new Error('AO tidak ditemukan: ' + idAO);
-  var sheet = ss().getSheetByName(SHEETS.AO);
+  if (!target) throw new Error('Analis tidak ditemukan: ' + idAnalis);
+  var sheet = getSheet(SHEETS.ANALIS);
+  if (!sheet) throw new Error('Sheet tidak ditemukan: ' + SHEETS.ANALIS);
   var header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
     .map(function (h) { return str(h).toUpperCase(); });
   var colStatus = header.indexOf('STATUS') + 1;
@@ -598,5 +638,5 @@ function apiUpdateAOStatus(p) {
   sheet.getRange(target._row, colStatus).setValue(statusVal);
   var obj = {};
   header.forEach(function (h, i) { obj[h] = sheet.getRange(target._row, i + 1).getValue(); });
-  return mapAO(obj);
+  return mapAnalis(obj);
 }

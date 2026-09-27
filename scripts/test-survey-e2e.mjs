@@ -55,7 +55,7 @@ const prospek = await post({
 console.log('createProspek:', JSON.stringify(prospek));
 if (!prospek.success) process.exit(1);
 
-// 2. Survey uji (tanpa GPS, tanpa idAO -> fallback AO milik prospek)
+// 2. Survey uji (tanpa GPS, tanpa idAnalis -> fallback Analis milik prospek)
 const survey = await post({
   action: 'createSurvey',
   idProspek: prospek.data.idProspek,

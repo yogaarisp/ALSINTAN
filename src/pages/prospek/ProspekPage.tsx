@@ -110,7 +110,7 @@ export default function ProspekPage() {
     const matchSearch =
       p.namaGapoktan.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.kecamatan.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.namaAO.toLowerCase().includes(searchQuery.toLowerCase())
+      (p.namaAnalis ?? '').toLowerCase().includes(searchQuery.toLowerCase())
 
     const matchStatus = statusFilter === 'ALL' || p.status === statusFilter
     const matchKecamatan =
@@ -125,7 +125,7 @@ export default function ProspekPage() {
       <div className="dev-banner">
         <Sparkles size={16} />
         <div>
-          <strong>Pipeline Prospek Fase 1:</strong> Terintegrasi ke Google Spreadsheet. Prospek baru dapat dibuat dan di-assign ke AO untuk tindak lanjut survey lapangan.
+          <strong>Pipeline Prospek Fase 1:</strong> Terintegrasi ke Google Spreadsheet. Prospek baru dapat dibuat dan di-assign ke Analis untuk tindak lanjut survey lapangan.
         </div>
       </div>
 
@@ -156,7 +156,7 @@ export default function ProspekPage() {
             <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
             <input
               type="text"
-              placeholder="Cari Gapoktan, AO, atau kecamatan..."
+              placeholder="Cari Gapoktan, Analis, atau kecamatan..."
               className="input"
               style={{ paddingLeft: 36 }}
               value={searchQuery}
@@ -215,7 +215,7 @@ export default function ProspekPage() {
                 <th>Gapoktan</th>
                 <th>Kecamatan</th>
                 <th>Komoditas</th>
-                <th>AO Penanggung Jawab</th>
+                <th>Analis Penanggung Jawab</th>
                 <th>Estimasi Alsintan</th>
                 <th>Tanggal</th>
                 <th>Status</th>
@@ -248,10 +248,10 @@ export default function ProspekPage() {
                           {p.komoditas}
                         </span>
                       </td>
-                      <td data-label="AO Penanggung Jawab">
+                      <td data-label="Analis Penanggung Jawab">
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <User size={14} color="#64748b" />
-                          <span>{p.namaAO}</span>
+                          <span>{p.namaAnalis}</span>
                         </div>
                       </td>
                       <td data-label="Estimasi Alsintan" style={{ fontSize: '0.8125rem' }}>{p.estimasiKebutuhan || '-'}</td>
@@ -455,8 +455,8 @@ export default function ProspekPage() {
                 <strong style={{ color: '#16a34a' }}>{selectedProspek.komoditas}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>Account Officer</span>
-                <strong>{selectedProspek.namaAO}</strong>
+                <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>Analis</span>
+                <strong>{selectedProspek.namaAnalis}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
                 <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>Kebutuhan Alsintan</span>

@@ -28,11 +28,11 @@ const SHORTCUT_ACCOUNTS = [
     borderHover: '#c084fc',
   },
   {
-    role: 'AO',
-    title: 'Account Officer (AO)',
+    role: 'ANALIS',
+    title: 'Analis',
     desc: 'Target wilayah, prospek & survey lapangan',
     email: 'budi@siap-alsintan.id',
-    password: 'ao123',
+    password: 'analis123',
     icon: UserIcon,
     badgeBg: '#dcfce7',
     badgeColor: '#15803d',
@@ -41,7 +41,7 @@ const SHORTCUT_ACCOUNTS = [
   {
     role: 'MANAJEMEN',
     title: 'Manajemen',
-    desc: 'Monitoring kinerja AO & evaluasi potensi',
+    desc: 'Monitoring kinerja Analis & evaluasi potensi',
     email: 'manager@siap-alsintan.id',
     password: 'mgr123',
     icon: BarChart3,
@@ -75,13 +75,13 @@ export default function LoginPage() {
       const payload = JSON.parse(atob(credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
       const email = String(payload.email || '').toLowerCase()
       if (!email) throw new Error('Email Google tidak terbaca')
-      const check = await gasPost<{ email: string; nama: string; role: string; idAO: string }>('authCheck', { email })
+      const check = await gasPost<{ email: string; nama: string; role: string; idAnalis: string }>('authCheck', { email })
       const role = check.role as UserRole
-      if (!['ADMIN', 'AO', 'MANAJEMEN'].includes(role)) {
+      if (!['ADMIN', 'ANALIS', 'MANAJEMEN'].includes(role)) {
         throw new Error(`Role tidak dikenal: ${check.role}`)
       }
       const user: User = {
-        id: check.idAO || email,
+        id: check.idAnalis || email,
         nama: check.nama || payload.name || email,
         email,
         role,

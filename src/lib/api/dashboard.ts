@@ -1,7 +1,7 @@
 // ============================================================
 // SIAP ALSINTAN — API Service: Dashboard
 // ============================================================
-// KPI dihitung langsung dari MASTER_WILAYAH + DATA_PROSPEK + MASTER_AO
+// KPI dihitung langsung dari MASTER_WILAYAH + DATA_PROSPEK + MASTER_ANALIS
 // di Apps Script, sehingga angka selalu sinkron dengan spreadsheet
 // ============================================================
 

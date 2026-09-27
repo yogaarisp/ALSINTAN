@@ -45,21 +45,21 @@ const WEIGHT_FIELDS: {
 type WeightKey = (typeof WEIGHT_FIELDS)[number]['key']
 type TestState = 'idle' | 'loading' | 'ok' | 'error'
 
-const ROLE_ACCESS: { fitur: string; admin: boolean; ao: boolean; manajemen: boolean }[] = [
-  { fitur: 'Executive Dashboard', admin: true, ao: true, manajemen: true },
-  { fitur: 'Peta Potensi Interaktif', admin: true, ao: true, manajemen: true },
-  { fitur: 'Ranking Prioritas Wilayah', admin: true, ao: true, manajemen: true },
-  { fitur: 'Lihat Semua Prospek', admin: true, ao: false, manajemen: true },
-  { fitur: 'Tambah Prospek Baru', admin: true, ao: true, manajemen: false },
-  { fitur: 'Input Survey & GPS Lapangan', admin: true, ao: true, manajemen: false },
-  { fitur: 'Monitoring Kinerja AO', admin: true, ao: false, manajemen: true },
-  { fitur: 'Evaluasi Baseline vs Realisasi', admin: true, ao: false, manajemen: true },
-  { fitur: 'Pengaturan & Integrasi API', admin: true, ao: false, manajemen: false },
+const ROLE_ACCESS: { fitur: string; admin: boolean; analis: boolean; manajemen: boolean }[] = [
+  { fitur: 'Executive Dashboard', admin: true, analis: true, manajemen: true },
+  { fitur: 'Peta Potensi Interaktif', admin: true, analis: true, manajemen: true },
+  { fitur: 'Ranking Prioritas Wilayah', admin: true, analis: true, manajemen: true },
+  { fitur: 'Lihat Semua Prospek', admin: true, analis: false, manajemen: true },
+  { fitur: 'Tambah Prospek Baru', admin: true, analis: true, manajemen: false },
+  { fitur: 'Input Survey & GPS Lapangan', admin: true, analis: true, manajemen: false },
+  { fitur: 'Monitoring Kinerja Analis', admin: true, analis: false, manajemen: true },
+  { fitur: 'Evaluasi Baseline vs Realisasi', admin: true, analis: false, manajemen: true },
+  { fitur: 'Pengaturan & Integrasi API', admin: true, analis: false, manajemen: false },
 ]
 
 const ROLE_LABEL: Record<UserRole, string> = {
   ADMIN: 'Administrator',
-  AO: 'Account Officer',
+  ANALIS: 'Analis',
   MANAJEMEN: 'Manajemen',
 }
 
@@ -250,7 +250,7 @@ export default function PengaturanPage() {
         </div>
         <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <p style={{ fontSize: '0.8125rem', color: '#64748b', margin: 0 }}>
-            URL deployment Web App Google Apps Script digunakan semua API (prospek, survey, AO,
+            URL deployment Web App Google Apps Script digunakan semua API (prospek, survey, analis,
             sumber data). Perubahan langsung berlaku tanpa perlu reload.
           </p>
 
@@ -593,7 +593,7 @@ export default function PengaturanPage() {
               <tr>
                 <th>Fitur / Modul</th>
                 <th>Administrator</th>
-                <th>Account Officer</th>
+                <th>Analis</th>
                 <th>Manajemen</th>
               </tr>
             </thead>
@@ -602,7 +602,7 @@ export default function PengaturanPage() {
                 <tr key={row.fitur}>
                   <td data-label="Fitur / Modul">{row.fitur}</td>
                   <td data-label="Administrator">{row.admin ? '✓' : '—'}</td>
-                  <td data-label="Account Officer">{row.ao ? '✓' : '—'}</td>
+                  <td data-label="Analis">{row.analis ? '✓' : '—'}</td>
                   <td data-label="Manajemen">{row.manajemen ? '✓' : '—'}</td>
                 </tr>
               ))}
