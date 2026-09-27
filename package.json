@@ -16,6 +16,9 @@
     "gas:backup": "node scripts/backup-all-sheets.mjs",
     "migrate:analis": "node scripts/migrate-ao-to-analis.mjs"
   },
+  "allowScripts": {
+    "esbuild@0.21.5": true
+  },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
     "@radix-ui/react-avatar": "^1.2.6",
