@@ -103,6 +103,19 @@ export async function getPoktanById(idPoktan: string): Promise<MasterPoktan | nu
   return all.items.find((p) => p.idPoktan === idPoktan) ?? null
 }
 
+/**
+ * `true` bila action `getPoktan` ada di deployment Apps Script aktif.
+ *
+ * Dipakai form survey sebagai penanda: kalau `false`, backend yang aktif belum
+ * punya `ensureProspekDariPoktan`, jadi `createSurvey` akan menolak ID Poktan
+ * yang belum terdaftar di `DATA_PROSPEK` dengan pesan
+ * "idProspek tidak dikenal". Tanpa peringatan ini, Analis bisa mengisi seluruh
+ * form di lapangan lalu datanya hilang saat tombol ditekan.
+ */
+export function isPoktanActionAvailable(): boolean {
+  return !getPoktanUnavailable
+}
+
 // ============================================================
 // Jalur 2 — baca lewat getSourceData + bersihkan di sisi klien
 // ============================================================

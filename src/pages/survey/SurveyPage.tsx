@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getProspek } from '@/lib/api/prospek'
-import { getPoktan } from '@/lib/api/poktan'
+import { getPoktan, isPoktanActionAvailable } from '@/lib/api/poktan'
 import { getWilayah } from '@/lib/api/wilayah'
 import { createSurvey, getSurvey } from '@/lib/api/survey'
 import { useAuth } from '@/lib/auth/auth-context'
@@ -156,6 +156,16 @@ export default function SurveyPage() {
   }
 
   const idProspekTerpilih = useWatch({ control, name: 'idProspek' })
+
+  // ID Poktan yang sudah punya baris di DATA_PROSPEK tetap bisa disimpan
+  // backend lama (P001, P002, dan hasil createProspek manual).
+  const idProspekTerdaftar = useMemo(
+    () => (prospekData?.items ?? []).some((p) => p.idProspek === idProspekTerpilih),
+    [prospekData, idProspekTerpilih],
+  )
+  // Flag `getPoktanUnavailable` berubah saat respons pertama tiba (query berubah
+  // dari loading ke sukses), jadi render berikutnya sudah membaca nilai benar.
+  const backendSiapSimpan = isPoktanActionAvailable() || idProspekTerdaftar
 
   // Total seluruh poktan 2026 (untuk keterangan di header blok)
   const totalPoktan = useMemo(
@@ -673,10 +683,32 @@ export default function SurveyPage() {
               </div>
             </div>
 
-            <div className="card-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+            <div className="card-footer" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10 }}>
+              {/* Backend versi lama tidak bisa mendaftarkan ID Poktan ke
+                  DATA_PROSPEK, jadi createSurvey akan menolak. Jangan biarkan
+                  Analis mengisi form panjang di lapangan lalu kehilangan data. */}
+              {idProspekTerpilih && !backendSiapSimpan && (
+                <div
+                  style={{
+                    width: '100%',
+                    padding: 10,
+                    background: '#fff7ed',
+                    border: '1px solid #fdba74',
+                    borderRadius: 10,
+                    fontSize: '0.8125rem',
+                    color: '#9a3412',
+                    textAlign: 'left',
+                  }}
+                >
+                  <strong>Belum bisa disimpan.</strong> Apps Script yang aktif masih versi lama — action{' '}
+                  <code>getPoktan</code>/<code>ensureProspekDariPoktan</code> belum ada, jadi ID Poktan di atas
+                  akan ditolak dengan pesan <em>&ldquo;idProspek tidak dikenal&rdquo;</em>. Jangan isi form ini
+                  dulu: deploy ulang <code>Code.gs</code>, lalu muat ulang halaman.
+                </div>
+              )}
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !backendSiapSimpan}
                 className="btn btn-primary btn-lg"
                 style={{ width: '100%', maxWidth: 320, justifyContent: 'center' }}
               >
