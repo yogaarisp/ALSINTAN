@@ -90,11 +90,16 @@ export default function SurveyPage() {
   })
 
   // Daftar poktan per kecamatan — diambil saat kecamatan dipilih (maks. ±311 baris)
-  const { data: poktanData, isLoading: loadingPoktan } = useQuery({
+  const {
+    data: poktanData,
+    isLoading: loadingPoktan,
+    error: errorPoktan,
+  } = useQuery({
     queryKey: ['poktan', kecamatan],
     queryFn: () => getPoktan({ kecamatan, limit: 1000 }),
     enabled: kecamatan !== '',
     staleTime: 60 * 60 * 1000,
+    retry: 1,
   })
 
   const { data: surveyData, isLoading: loadingSurvey } = useQuery({
@@ -388,9 +393,11 @@ export default function SurveyPage() {
                           <option value="">
                             {loadingPoktan
                               ? '-- Memuat daftar poktan...'
-                              : poktanTerfilter.length
-                                ? `-- Pilih Nama Poktan (${poktanTerfilter.length}) --`
-                                : '-- Pilih Nama Poktan --'}
+                              : errorPoktan
+                                ? '-- Gagal memuat daftar poktan --'
+                                : poktanTerfilter.length
+                                  ? `-- Pilih Nama Poktan (${poktanTerfilter.length}) --`
+                                  : '-- Pilih Nama Poktan --'}
                           </option>
                           {initialProspekId && !poktanData?.items.some((p) => p.idPoktan === initialProspekId) && (
                             <option value={initialProspekId}>
@@ -407,7 +414,15 @@ export default function SurveyPage() {
                       </>
                     )}
                     {errors.idProspek && <p className="input-error">{errors.idProspek.message}</p>}
-                    {kecamatan && !loadingPoktan && poktanTerfilter.length === 0 && (
+                    {kecamatan && errorPoktan && (
+                      <p className="input-error">
+                        Gagal memuat daftar poktan: {(errorPoktan as Error).message}
+                        <br />
+                        Action <code>getPoktan</code> harus ada di Apps Script — deploy ulang Code.gs kalau ini
+                        masih muncul.
+                      </p>
+                    )}
+                    {kecamatan && !loadingPoktan && !errorPoktan && poktanTerfilter.length === 0 && (
                       <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 4 }}>
                         {cariPoktan
                           ? `Tidak ada poktan di ${kecamatan} yang cocok dengan "${cariPoktan}".`
