@@ -4,6 +4,34 @@ Komunikasi antara Frontend Web dan Google Apps Script Middleware menggunakan HTT
 
 Base URL: `VITE_GAS_API_URL` (Contoh: `https://script.google.com/macros/s/{DEPLOYMENT_ID}/exec`)
 
+## Daftar Action
+
+| Action | Method |since deploy |
+|---|---|---|
+| `ping` | GET | awal |
+| `getDashboardKPI` | GET | awal |
+| `getWilayah` | GET | awal |
+| `getProspek` | GET | awal |
+| `getAnalis` | GET | awal |
+| `getSurvey` | GET | awal |
+| `getSources` | GET | awal |
+| `getSourceData` | GET | awal |
+| `createProspek` | POST | awal |
+| `createSurvey` | POST | awal |
+| `createAnalis` | POST | awal |
+| `updateAnalisStatus` | POST | awal |
+| `authCheck` | POST | awal |
+| `getPoktan` | GET | **2026-09-29** |
+| `updateProspek` | POST | **2026-09-29** |
+| `deleteProspek` | POST | **2026-09-29** |
+| `restoreProspek` | POST | **2026-09-29** |
+
+Action yang ditandai **2026-09-29** hanya tersedia setelah `Code.gs` versi
+terbaru dideploy sebagai **New version**. Tanpa itu, `getSourceData` (fallback
+baca Master Poktan) tetap bekerja, tapi `createSurvey` akan menolak ID Poktan
+dan tombol submit di `/survey` sengaja diblokir supaya data lapangan tidak
+hilang.
+
 ---
 
 ## 1. Dashboard & KPI
@@ -69,8 +97,75 @@ Base URL: `VITE_GAS_API_URL` (Contoh: `https://script.google.com/macros/s/{DEPLO
   "namaGapoktan": "Poktan Maju Bersama",
   "komoditas": "Padi",
   "estimasiKebutuhan": "Combine Harvester 2 unit",
-  "catatan": "Akses jalan bagus"
+  "catatan": "Akses jalan bagus",
+  "idAnalis": "AN001",
+  "namaAnalis": "Budi Santoso"
 }
+```
+> `idAnalis` opsional. Kalau tidak dikirim, backend jatuh ke `AN001`. Frontend
+> mengirimnya otomatis dari sesi login kalau pengguna berperan `ANALIS`.
+
+- **Method**: `POST`
+- **Action**: `updateProspek`
+
+Ubah isi satu prospek. Field yang tidak dikirim tidak disentuh sama sekali.
+`ID_PROSPEK`, `ID_KECAMATAN`, `KECAMATAN`, dan `TANGGAL` **tidak bisa diubah**:
+ID jadi kunci relasi ke `DATA_SURVEY`, sedangkan kecamatan dan tanggal adalah
+jejak registrasi awal.
+
+| Field | Kolom sheet | Keterangan |
+|---|---|---|
+| `idProspek` | `ID_PROSPEK` | Wajib, sebagai kunci baris |
+| `namaGapoktan` | `NAMA_GAPOKTAN` | |
+| `komoditas` | `KOMODITAS` | |
+| `status` | `STATUS` | Harus salah satu dari `STATUS_PROSPEK`, selain itu ditolak |
+| `idAnalis` | `ID_ANALIS` + `NAMA_ANALIS` | `NAMA_ANALIS` diambil otomatis dari `MASTER_ANALIS`; analis nonaktif ditolak |
+| `estimasiKebutuhan` | `ESTIMASI_ALSINTAN` | |
+| `catatan` | `CATATAN` | Mengganti seluruh isi, bukan menambahkan |
+
+- **Method**: `POST`
+- **Action**: `deleteProspek`
+
+**Soft delete.** Barisnya tetap ada di sheet; yang berubah hanya:
+
+- `STATUS` → `TIDAK_POTENSIAL`
+- `CATATAN` → ditambahkan penanda `Dinonaktifkan <tanggal> — <alasan>`
+
+Alasannya: baris di `DATA_SURVEY` mereferensikan `ID_PROSPEK`, jadi menghapus
+baris induknya membuat data lapangan yatim dan KPI/monitoring ikut rusak.
+
+```json
+{ "idProspek": "5107401", "alasan": "Lahan tidak bisa dikunjungi" }
+```
+
+Respons:
+
+```json
+{
+  "ok": true,
+  "sudahNonaktif": false,
+  "jumlahSurvey": 2,
+  "prospek": { "...": "DataProspek" }
+}
+```
+
+`sudahNonaktif: true` berarti baris sudah `TIDAK_POTENSIAL` sebelumnya, jadi
+tidak ada yang ditulis ulang (pemanggilan idempoten). `jumlahSurvey` dipakai
+frontend untuk memberi tahu Analis bahwa data lapangan tetap aman.
+
+> Penting: status `TIDAK_POTENSIAL` bisa juga dipilih manual di pipeline tanpa
+> lewat `deleteProspek`. Frontend membedakannya lewat penanda `Dinonaktifkan`
+> di `CATATAN` — hanya baris bertanda itu yang menampilkan tombol
+> "Aktifkan Kembali".
+
+- **Method**: `POST`
+- **Action**: `restoreProspek`
+
+Membatalkan `deleteProspek`: status dikembalikan (default `BARU`) dan penanda
+`Dinonaktifkan` dibuang dari ujung `CATATAN`.
+
+```json
+{ "idProspek": "5107401", "status": "BARU" }
 ```
 
 ---

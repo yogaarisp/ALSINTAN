@@ -4,7 +4,15 @@
 // Sumber data: sheet DATA_PROSPEK di Google Spreadsheet (via Apps Script)
 // ============================================================
 
-import type { DataProspek, ProspekFilter, PaginatedResponse, CreateProspekForm } from '@/lib/types'
+import type {
+  DataProspek,
+  ProspekFilter,
+  PaginatedResponse,
+  CreateProspekForm,
+  UpdateProspekForm,
+  DeleteProspekResult,
+  StatusProspek,
+} from '@/lib/types'
 import { MOCK_PROSPEK } from '@/lib/mock/mock-data'
 import { PAGINATION } from '@/lib/config/app-config'
 import { getLocalCache, setLocalCache } from '@/lib/utils/cache'
@@ -80,12 +88,62 @@ export async function createProspek(form: CreateProspekForm): Promise<DataProspe
       idProspek: `P${Date.now()}`,
       kecamatan: form.idKecamatan, // akan di-resolve dari master wilayah
       ...form,
-      idAnalis: 'AN001', // akan diisi dari auth session
-      namaAnalis: 'Budi Santoso',
+      idAnalis: form.idAnalis ?? 'AN001',
+      namaAnalis: form.namaAnalis ?? 'Budi Santoso',
       status: 'BARU',
       tanggal: new Date().toISOString().split('T')[0],
     }
     return newProspek
   }
   return gasPost<DataProspek>('createProspek', { ...form })
+}
+
+/** Ubah isi prospek yang sudah ada. Kolom kunci tidak dikirim sama sekali. */
+export async function updateProspek(form: UpdateProspekForm): Promise<DataProspek> {
+  if (USE_MOCK) {
+    await new Promise((r) => setTimeout(r, 600))
+    const list = [...MOCK_PROSPEK]
+    const i = list.findIndex((p) => p.idProspek === form.idProspek)
+    if (i < 0) throw new Error('Prospek tidak ditemukan: ' + form.idProspek)
+    list[i] = { ...list[i], ...form }
+    return list[i]
+  }
+  return gasPost<DataProspek>('updateProspek', { ...form })
+}
+
+/**
+ * Hapus prospek = nonaktifkan (soft delete). Backend mengubah status jadi
+ * TIDAK_POTENSIAL dan menambahkan penanda di CATATAN; barisnya tidak dihapus
+ * dari sheet supaya DATA_SURVEY yang mereferensikan ID_PROSPEK tidak yatim.
+ */
+export async function deleteProspek(
+  idProspek: string,
+  alasan?: string
+): Promise<DeleteProspekResult> {
+  if (USE_MOCK) {
+    await new Promise((r) => setTimeout(r, 400))
+    const found = MOCK_PROSPEK.find((p) => p.idProspek === idProspek)
+    if (!found) throw new Error('Prospek tidak ditemukan: ' + idProspek)
+    return {
+      ok: true,
+      sudahNonaktif: found.status === 'TIDAK_POTENSIAL',
+      jumlahSurvey: 0,
+      prospek: { ...found, status: 'TIDAK_POTENSIAL' },
+    }
+  }
+  return gasPost<DeleteProspekResult>('deleteProspek', { idProspek, alasan })
+}
+
+/** Kembalikan prospek yang dinonaktifkan, sekalian buang penanda CATATAN. */
+export async function restoreProspek(
+  idProspek: string,
+  status: StatusProspek = 'BARU'
+): Promise<DataProspek> {
+  if (USE_MOCK) {
+    await new Promise((r) => setTimeout(r, 400))
+    const found = MOCK_PROSPEK.find((p) => p.idProspek === idProspek)
+    if (!found) throw new Error('Prospek tidak ditemukan: ' + idProspek)
+    return { ...found, status }
+  }
+  return gasPost<DataProspek>('restoreProspek', { idProspek, status })
 }

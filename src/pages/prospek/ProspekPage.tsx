@@ -13,12 +13,24 @@ import {
   Building,
   User,
   Sparkles,
-  Users,
+  Pencil,
+  Trash2,
+  RotateCcw,
+  AlertTriangle,
 } from 'lucide-react'
-import { getProspek, createProspek } from '@/lib/api/prospek'
+import { getProspek, createProspek, updateProspek, deleteProspek, restoreProspek } from '@/lib/api/prospek'
 import { getWilayah } from '@/lib/api/wilayah'
-import { getPoktan } from '@/lib/api/poktan'
-import type { StatusProspek, CreateProspekForm, DataProspek, MasterWilayah, MasterPoktan } from '@/lib/types'
+import { getAnalis } from '@/lib/api/analis'
+import { isGasConfigured } from '@/lib/api/gas'
+import { useAuth } from '@/lib/auth/auth-context'
+import type {
+  StatusProspek,
+  CreateProspekForm,
+  DataProspek,
+  MasterWilayah,
+  MasterAnalis,
+  PaginatedResponse,
+} from '@/lib/types'
 import {
   formatDate,
   getStatusProspekInfo,
@@ -29,11 +41,42 @@ import { MOCK_WILAYAH, MOCK_PROSPEK } from '@/lib/mock/mock-data'
 
 const prospekSchema = z.object({
   idKecamatan: z.string().min(1, 'Pilih kecamatan'),
-  namaGapoktan: z.string().min(3, 'Pilih poktan terlebih dahulu'),
+  namaGapoktan: z.string().min(3, 'Nama Gapoktan minimal 3 karakter'),
   komoditas: z.string().min(1, 'Pilih komoditas'),
   estimasiKebutuhan: z.string().optional(),
   catatan: z.string().optional(),
 })
+
+const editProspekSchema = z.object({
+  namaGapoktan: z.string().min(3, 'Nama Gapoktan minimal 3 karakter'),
+  komoditas: z.string().min(1, 'Pilih komoditas'),
+  status: z.string().min(1, 'Pilih status'),
+  idAnalis: z.string().min(1, 'Pilih Analis penanggung jawab'),
+  estimasiKebutuhan: z.string().optional(),
+  catatan: z.string().optional(),
+})
+
+type EditProspekFormData = z.infer<typeof editProspekSchema>
+
+const STATUS_OPTIONS: StatusProspek[] = [
+  'BARU',
+  'DALAM_PROSPEK',
+  'SURVEY',
+  'POTENSIAL',
+  'TIDAK_POTENSIAL',
+  'CLOSING',
+  'DISBURSE',
+  'CAIR',
+]
+
+/**
+ * Bedakan "sudah dinonaktifkan lewat tombol Hapus" dari status
+ * TIDAK_POTENSIAL yang memang dipilih manual di pipeline. Penandanya
+ * ditulis backend ke kolom CATATAN dengan awalan "Dinonaktifkan".
+ */
+function isDinonaktifkan(p: DataProspek): boolean {
+  return /\|\s*Dinonaktifkan \d{4}-\d{2}-\d{2}/.test(p.catatan || '')
+}
 
 export default function ProspekPage() {
   const [searchParams] = useSearchParams()
@@ -44,11 +87,11 @@ export default function ProspekPage() {
   const [kecamatanFilter, setKecamatanFilter] = useState<string>(initialKecamatan)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [selectedProspek, setSelectedProspek] = useState<DataProspek | null>(null)
-  // state untuk form tambah prospek
-  const [formKecamatan, setFormKecamatan] = useState('')
-  const [poktanSearch, setPoktanSearch] = useState('')
-  const [selectedPoktan, setSelectedPoktan] = useState<MasterPoktan | null>(null)
+  const [editingProspek, setEditingProspek] = useState<DataProspek | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<DataProspek | null>(null)
+  const [alasanNonaktif, setAlasanNonaktif] = useState('')
 
+  const { user } = useAuth()
   const queryClient = useQueryClient()
 
   useEffect(() => {
@@ -57,17 +100,28 @@ export default function ProspekPage() {
     }
   }, [initialKecamatan])
 
-  const { data: prospekData } = useQuery({
+  const { data: prospekData, isLoading: isProspekLoading } = useQuery({
     queryKey: ['prospek'],
     queryFn: () => getProspek({ limit: 100 }),
-    initialData: () =>
-      getLocalCache('prospek_all') ?? {
-        items: MOCK_PROSPEK,
-        total: MOCK_PROSPEK.length,
-        page: 1,
-        limit: 100,
-        totalPages: 1,
-      },
+    // Jangan pernah tampilkan MOCK_PROSPEK sebagai data nyata: ID-nya (P001,
+    // P002) sama persis dengan baris asli di DATA_PROSPEK, jadi tabel akan
+    // terlihat seperti ada 5 prospek padahal di spreadsheet hanya 2. Mock
+    // hanya dipakai kalau GAS memang belum dikonfigurasi; selain itu tunggu
+    // respons asli atau tampilkan skeleton.
+    initialData: () => {
+      const cached = getLocalCache<PaginatedResponse<DataProspek>>('prospek_all')
+      if (cached) return cached
+      if (!isGasConfigured()) {
+        return {
+          items: MOCK_PROSPEK,
+          total: MOCK_PROSPEK.length,
+          page: 1,
+          limit: 100,
+          totalPages: 1,
+        }
+      }
+      return undefined
+    },
     initialDataUpdatedAt: 0,
   })
 
@@ -78,28 +132,28 @@ export default function ProspekPage() {
     initialDataUpdatedAt: 0,
   })
 
-  // Load poktan saat kecamatan di form dipilih
-  const { data: poktanData, isFetching: loadingPoktan } = useQuery({
-    queryKey: ['poktan', formKecamatan],
-    queryFn: () => getPoktan({ kecamatan: formKecamatan, limit: 1000 }),
-    enabled: formKecamatan !== '',
-    staleTime: 60 * 60 * 1000,
-    retry: 1,
+  const { data: analisList = [] } = useQuery({
+    queryKey: ['analis'],
+    queryFn: () => getAnalis(),
+    initialData: () => getLocalCache<MasterAnalis[]>('analis_all'),
+    initialDataUpdatedAt: 0,
   })
 
-  const poktanList = poktanData?.items ?? []
-  const filteredPoktan = poktanSearch
-    ? poktanList.filter(p =>
-        p.namaPoktan.toLowerCase().includes(poktanSearch.toLowerCase()) ||
-        p.desa.toLowerCase().includes(poktanSearch.toLowerCase())
-      )
-    : poktanList
+  // Hanya Analis AKTIF yang boleh jadi penanggung jawab. Analis yang sedang
+  // ditugaskan tetap ditampilkan walau nonaktif, supaya nilainya tidak hilang
+  // dari dropdown saat prospek diedit.
+  const analisAktif = analisList.filter((a) => a.status === 'AKTIF')
+  const opsiAnalis = (() => {
+    if (!editingProspek?.idAnalis) return analisAktif
+    if (analisAktif.some((a) => a.idAnalis === editingProspek.idAnalis)) return analisAktif
+    const sekarang = analisList.find((a) => a.idAnalis === editingProspek.idAnalis)
+    return sekarang ? [sekarang, ...analisAktif] : analisAktif
+  })()
 
   const {
     register,
     handleSubmit,
     reset,
-    setValue,
     formState: { errors },
   } = useForm<CreateProspekForm>({
     resolver: zodResolver(prospekSchema),
@@ -111,29 +165,114 @@ export default function ProspekPage() {
     },
   })
 
-  const handleCloseCreate = () => {
-    setIsCreateOpen(false)
-    setFormKecamatan('')
-    setPoktanSearch('')
-    setSelectedPoktan(null)
-    reset()
-  }
-
   const createMutation = useMutation({
     mutationFn: (form: CreateProspekForm) => createProspek(form),
     onSuccess: (newProspek) => {
       toast.success(`Prospek ${newProspek.namaGapoktan} berhasil dicatat`)
       queryClient.invalidateQueries({ queryKey: ['prospek'] })
-      handleCloseCreate()
+      setIsCreateOpen(false)
+      reset()
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast.error(err.message || 'Gagal menyimpan prospek')
     },
   })
 
   const onSubmit = (data: CreateProspekForm) => {
-    createMutation.mutate(data)
+    // Analis penanggung jawab = pengguna yang sedang login (kalau dia Analis).
+    // Tanpa ini backend jatuh ke default AN001 dan semua prospek manual
+    // menumpuk ke satu orang.
+    const isAnalis = user?.role === 'ANALIS'
+    createMutation.mutate({
+      ...data,
+      ...(isAnalis ? { idAnalis: user!.id, namaAnalis: user!.nama } : {}),
+    })
   }
+
+  // ── Form edit ────────────────────────────────────────────
+  const {
+    register: registerEdit,
+    handleSubmit: handleSubmitEdit,
+    reset: resetEdit,
+    formState: { errors: editErrors },
+  } = useForm<EditProspekFormData>({
+    resolver: zodResolver(editProspekSchema),
+    defaultValues: {
+      namaGapoktan: '',
+      komoditas: 'Padi',
+      status: 'BARU',
+      idAnalis: '',
+    },
+  })
+
+  const openEdit = (p: DataProspek) => {
+    resetEdit({
+      namaGapoktan: p.namaGapoktan,
+      komoditas: p.komoditas || 'Padi',
+      status: p.status,
+      idAnalis: p.idAnalis || '',
+      estimasiKebutuhan: p.estimasiKebutuhan || '',
+      catatan: p.catatan || '',
+    })
+    setSelectedProspek(null)
+    setEditingProspek(p)
+  }
+
+  const updateMutation = useMutation({
+    mutationFn: (form: EditProspekFormData) =>
+      updateProspek({
+        idProspek: editingProspek!.idProspek,
+        namaGapoktan: form.namaGapoktan,
+        komoditas: form.komoditas,
+        status: form.status as StatusProspek,
+        // Hanya kirim idAnalis kalau benar-benar diganti. Kalau tidak, backend
+        // akan menolak karena analis lama mungkin sudah TIDAK_AKTIF.
+        ...(form.idAnalis !== editingProspek!.idAnalis ? { idAnalis: form.idAnalis } : {}),
+        estimasiKebutuhan: form.estimasiKebutuhan,
+        catatan: form.catatan,
+      }),
+    onSuccess: (updated) => {
+      toast.success(`Prospek ${updated.namaGapoktan} diperbarui`)
+      queryClient.invalidateQueries({ queryKey: ['prospek'] })
+      setEditingProspek(null)
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || 'Gagal memperbarui prospek')
+    },
+  })
+
+  // ── Nonaktifkan (soft delete) ─────────────────────────────
+  const deleteMutation = useMutation({
+    mutationFn: (p: DataProspek) => deleteProspek(p.idProspek, alasanNonaktif.trim() || undefined),
+    onSuccess: (res) => {
+      if (res.sudahNonaktif) {
+        toast('Prospek ini sudah nonaktif sebelumnya', { icon: 'ℹ️' })
+      } else {
+        const info = res.jumlahSurvey > 0
+          ? ` (${res.jumlahSurvey} data survey tetap tersimpan)`
+          : ''
+        toast.success(`Prospek dinonaktifkan${info}`)
+      }
+      queryClient.invalidateQueries({ queryKey: ['prospek'] })
+      setDeleteTarget(null)
+      setAlasanNonaktif('')
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || 'Gagal menonaktifkan prospek')
+    },
+  })
+
+  const restoreMutation = useMutation({
+    mutationFn: (p: DataProspek) => restoreProspek(p.idProspek, 'BARU'),
+    onSuccess: (restored) => {
+      toast.success(`Prospek ${restored.namaGapoktan} diaktifkan kembali`)
+      queryClient.invalidateQueries({ queryKey: ['prospek'] })
+      setSelectedProspek(null)
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || 'Gagal mengaktifkan kembali prospek')
+    },
+  })
 
   // Filter items
   const items = prospekData?.items || []
@@ -256,7 +395,7 @@ export default function ProspekPage() {
               </tr>
             </thead>
             <tbody>
-              {!prospekData ? (
+              {!prospekData || isProspekLoading ? (
                 [1, 2, 3, 4].map((i) => (
                   <tr key={i}>
                     <td colSpan={9}>
@@ -295,12 +434,40 @@ export default function ProspekPage() {
                         </span>
                       </td>
                       <td data-label="Aksi" style={{ textAlign: 'right' }}>
-                        <button
-                          onClick={() => setSelectedProspek(p)}
-                          className="btn btn-secondary btn-sm"
-                        >
-                          Detail
-                        </button>
+                        <div style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                          <button
+                            onClick={() => setSelectedProspek(p)}
+                            className="btn btn-secondary btn-sm"
+                          >
+                            Detail
+                          </button>
+                          <button
+                            onClick={() => openEdit(p)}
+                            className="btn btn-secondary btn-sm"
+                            title="Ubah isi prospek"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          {isDinonaktifkan(p) ? (
+                            <button
+                              onClick={() => restoreMutation.mutate(p)}
+                              disabled={restoreMutation.isPending}
+                              className="btn btn-secondary btn-sm"
+                              title="Aktifkan kembali (status kembali ke Baru)"
+                            >
+                              <RotateCcw size={14} />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => { setDeleteTarget(p); setAlasanNonaktif('') }}
+                              className="btn btn-secondary btn-sm"
+                              title="Nonaktifkan prospek ini"
+                              style={{ color: '#dc2626' }}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )
@@ -330,7 +497,7 @@ export default function ProspekPage() {
             justifyContent: 'center',
             padding: 16,
           }}
-          onClick={handleCloseCreate}
+          onClick={() => setIsCreateOpen(false)}
         >
           <div
             className="card animate-slide-up"
@@ -344,105 +511,40 @@ export default function ProspekPage() {
                   Tambah Prospek Alsintan Baru
                 </h3>
               </div>
-              <button onClick={handleCloseCreate} className="btn btn-ghost btn-icon btn-sm">✕</button>
+              <button
+                onClick={() => setIsCreateOpen(false)}
+                className="btn btn-ghost btn-icon btn-sm"
+              >
+                ✕
+              </button>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)}>
               <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-                {/* Step 1 — Pilih Kecamatan */}
+                {/* Kecamatan */}
                 <div>
-                  <label className="input-label">1. Wilayah Kecamatan</label>
-                  <select
-                    className={`input ${errors.idKecamatan ? 'error' : ''}`}
-                    {...register('idKecamatan')}
-                    onChange={(e) => {
-                      register('idKecamatan').onChange(e)
-                      const wil = wilayahList.find(w => w.idKecamatan === e.target.value)
-                      setFormKecamatan(wil?.kecamatan || '')
-                      setSelectedPoktan(null)
-                      setPoktanSearch('')
-                      setValue('namaGapoktan', '')
-                    }}
-                  >
+                  <label className="input-label">Wilayah Kecamatan</label>
+                  <select className={`input ${errors.idKecamatan ? 'error' : ''}`} {...register('idKecamatan')}>
                     <option value="">-- Pilih Kecamatan --</option>
                     {wilayahList.map((w) => (
                       <option key={w.idKecamatan} value={w.idKecamatan}>
-                        Kec. {w.kecamatan}
+                        Kec. {w.kecamatan} (Luas: {w.luasLahan} Ha)
                       </option>
                     ))}
                   </select>
                   {errors.idKecamatan && <p className="input-error">{errors.idKecamatan.message}</p>}
                 </div>
 
-                {/* Step 2 — Pilih Poktan */}
+                {/* Nama Gapoktan */}
                 <div>
-                  <label className="input-label">
-                    2. Pilih Poktan
-                    {formKecamatan && (
-                      <span style={{ color: '#64748b', fontWeight: 400, marginLeft: 6 }}>
-                        — Kec. {formKecamatan} ({poktanList.length} poktan)
-                      </span>
-                    )}
-                  </label>
-
-                  {!formKecamatan ? (
-                    <div style={{ padding: '10px 12px', background: '#f8fafc', borderRadius: 8, fontSize: '0.8125rem', color: '#94a3b8', border: '1px dashed #e2e8f0' }}>
-                      Pilih kecamatan dulu untuk menampilkan daftar poktan
-                    </div>
-                  ) : loadingPoktan ? (
-                    <div className="skeleton" style={{ height: 40, borderRadius: 8 }} />
-                  ) : (
-                    <>
-                      {/* Search poktan */}
-                      <div style={{ position: 'relative', marginBottom: 6 }}>
-                        <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                        <input
-                          className="input"
-                          style={{ paddingLeft: 30, fontSize: '0.8125rem' }}
-                          placeholder="Cari nama poktan atau desa..."
-                          value={poktanSearch}
-                          onChange={(e) => setPoktanSearch(e.target.value)}
-                        />
-                      </div>
-                      {/* Dropdown poktan */}
-                      <select
-                        className={`input ${errors.namaGapoktan ? 'error' : ''}`}
-                        size={5}
-                        style={{ height: 'auto' }}
-                        value={selectedPoktan?.idPoktan || ''}
-                        onChange={(e) => {
-                          const pok = poktanList.find(p => p.idPoktan === e.target.value)
-                          if (pok) {
-                            setSelectedPoktan(pok)
-                            setValue('namaGapoktan', pok.namaPoktan, { shouldValidate: true })
-                          }
-                        }}
-                      >
-                        <option value="">-- Pilih Poktan --</option>
-                        {filteredPoktan.map((p) => (
-                          <option key={p.idPoktan} value={p.idPoktan}>
-                            {p.namaPoktan} — {p.desa}
-                          </option>
-                        ))}
-                      </select>
-                      {/* Poktan terpilih */}
-                      {selectedPoktan && (
-                        <div style={{ marginTop: 6, padding: '8px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, fontSize: '0.8125rem' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <Users size={14} color="#16a34a" />
-                            <strong style={{ color: '#15803d' }}>{selectedPoktan.namaPoktan}</strong>
-                          </div>
-                          <div style={{ color: '#64748b', marginTop: 2 }}>
-                            Ketua: {selectedPoktan.ketua || '-'} · Desa {selectedPoktan.desa} · {selectedPoktan.jumlahAnggota} anggota
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                  {/* hidden field namaGapoktan untuk validasi */}
-                  <input type="hidden" {...register('namaGapoktan')} />
-                  {errors.namaGapoktan && <p className="input-error">Pilih poktan terlebih dahulu</p>}
+                  <label className="input-label">Nama Gapoktan / Kelompok Tani</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: Gapoktan Tani Makmur"
+                    className={`input ${errors.namaGapoktan ? 'error' : ''}`}
+                    {...register('namaGapoktan')}
+                  />
+                  {errors.namaGapoktan && <p className="input-error">{errors.namaGapoktan.message}</p>}
                 </div>
 
                 {/* Komoditas */}
@@ -472,8 +574,8 @@ export default function ProspekPage() {
                 <div>
                   <label className="input-label">Catatan Lapangan</label>
                   <textarea
-                    rows={2}
-                    placeholder="Keterangan akses lahan, kontak ketua, dll..."
+                    rows={3}
+                    placeholder="Keterangan akses lahan, kontak ketua gapoktan, dll..."
                     className="input"
                     {...register('catatan')}
                   />
@@ -481,12 +583,16 @@ export default function ProspekPage() {
               </div>
 
               <div className="card-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                <button type="button" onClick={handleCloseCreate} className="btn btn-secondary btn-sm">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateOpen(false)}
+                  className="btn btn-secondary btn-sm"
+                >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  disabled={createMutation.isPending || !selectedPoktan}
+                  disabled={createMutation.isPending}
                   className="btn btn-primary btn-sm"
                 >
                   {createMutation.isPending ? 'Menyimpan...' : 'Simpan Prospek'}
@@ -566,16 +672,251 @@ export default function ProspekPage() {
                 </div>
               )}
             </div>
-            <div className="card-footer" style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <div className="card-footer" style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
               <button onClick={() => setSelectedProspek(null)} className="btn btn-secondary btn-sm">
                 Tutup
               </button>
-              <a
-                href={`/survey?prospekId=${selectedProspek.idProspek}`}
-                className="btn btn-primary btn-sm"
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {isDinonaktifkan(selectedProspek) ? (
+                  <button
+                    onClick={() => restoreMutation.mutate(selectedProspek)}
+                    disabled={restoreMutation.isPending}
+                    className="btn btn-secondary btn-sm"
+                  >
+                    <RotateCcw size={14} />
+                    Aktifkan Kembali
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { setDeleteTarget(selectedProspek); setAlasanNonaktif('') }}
+                    className="btn btn-secondary btn-sm"
+                    style={{ color: '#dc2626' }}
+                  >
+                    <Trash2 size={14} />
+                    Nonaktifkan
+                  </button>
+                )}
+                <button onClick={() => openEdit(selectedProspek)} className="btn btn-secondary btn-sm">
+                  <Pencil size={14} />
+                  Ubah
+                </button>
+                <a
+                  href={`/survey?prospekId=${selectedProspek.idProspek}`}
+                  className="btn btn-primary btn-sm"
+                >
+                  Lakukan Survey Lapangan
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Ubah Prospek */}
+      {editingProspek && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
+          onClick={() => setEditingProspek(null)}
+        >
+          <div
+            className="card animate-slide-up"
+            style={{ width: '100%', maxWidth: 500 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="card-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Pencil size={18} color="#16a34a" />
+                <div>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
+                    Ubah Prospek
+                  </h3>
+                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontFamily: 'monospace' }}>
+                    {editingProspek.idProspek} · Kec. {editingProspek.kecamatan}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingProspek(null)}
+                className="btn btn-ghost btn-icon btn-sm"
               >
-                Lakukan Survey Lapangan
-              </a>
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitEdit((v) => updateMutation.mutate(v))}>
+              <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ fontSize: '0.75rem', color: '#64748b', background: '#f8fafc', padding: '8px 10px', borderRadius: 8 }}>
+                  ID, Kecamatan, dan Tanggal registrasi dikunci — ID dipakai sebagai kunci relasi ke data survey lapangan.
+                </div>
+
+                <div>
+                  <label className="input-label">Nama Gapoktan / Kelompok Tani</label>
+                  <input
+                    type="text"
+                    className={`input ${editErrors.namaGapoktan ? 'error' : ''}`}
+                    {...registerEdit('namaGapoktan')}
+                  />
+                  {editErrors.namaGapoktan && <p className="input-error">{editErrors.namaGapoktan.message}</p>}
+                </div>
+
+                <div>
+                  <label className="input-label">Status Prospek</label>
+                  <select className="input" {...registerEdit('status')}>
+                    {STATUS_OPTIONS.map((s) => (
+                      <option key={s} value={s}>
+                        {getStatusProspekInfo(s).label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="input-label">Analis Penanggung Jawab</label>
+                  <select
+                    className={`input ${editErrors.idAnalis ? 'error' : ''}`}
+                    {...registerEdit('idAnalis')}
+                  >
+                    <option value="">-- Pilih Analis --</option>
+                    {opsiAnalis.map((a) => (
+                      <option key={a.idAnalis} value={a.idAnalis}>
+                        {a.namaAnalis} ({a.idAnalis}){a.status !== 'AKTIF' ? ' — nonaktif' : ''}
+                      </option>
+                    ))}
+                  </select>
+                  {editErrors.idAnalis && <p className="input-error">{editErrors.idAnalis.message}</p>}
+                  {opsiAnalis.length === 0 && (
+                    <p className="input-error">Belum ada Analis aktif di MASTER_ANALIS.</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="input-label">Komoditas Utama</label>
+                  <select className="input" {...registerEdit('komoditas')}>
+                    <option value="Padi">Padi</option>
+                    <option value="Jagung">Jagung</option>
+                    <option value="Kedelai">Kedelai</option>
+                    <option value="Hortikultura">Hortikultura</option>
+                    <option value="Tebu">Tebu</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="input-label">Estimasi Kebutuhan Alsintan</label>
+                  <input
+                    type="text"
+                    className="input"
+                    {...registerEdit('estimasiKebutuhan')}
+                  />
+                </div>
+
+                <div>
+                  <label className="input-label">Catatan Lapangan</label>
+                  <textarea rows={3} className="input" {...registerEdit('catatan')} />
+                </div>
+              </div>
+
+              <div className="card-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setEditingProspek(null)}
+                  className="btn btn-secondary btn-sm"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={updateMutation.isPending}
+                  className="btn btn-primary btn-sm"
+                >
+                  {updateMutation.isPending ? 'Menyimpan...' : 'Simpan Perubahan'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Konfirmasi Nonaktifkan (soft delete) */}
+      {deleteTarget && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
+          onClick={() => setDeleteTarget(null)}
+        >
+          <div
+            className="card animate-slide-up"
+            style={{ width: '100%', maxWidth: 440 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="card-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <AlertTriangle size={18} color="#dc2626" />
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
+                  Nonaktifkan Prospek?
+                </h3>
+              </div>
+              <button onClick={() => setDeleteTarget(null)} className="btn btn-ghost btn-icon btn-sm">
+                ✕
+              </button>
+            </div>
+
+            <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ fontSize: '0.875rem', color: '#334155' }}>
+                <strong>{deleteTarget.namaGapoktan}</strong>{' '}
+                <span style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#94a3b8' }}>
+                  ({deleteTarget.idProspek})
+                </span>{' '}
+                akan diubah statusnya menjadi <strong>Tidak Potensial</strong>.
+              </div>
+              <div style={{ fontSize: '0.8125rem', color: '#475569', background: '#f8fafc', padding: '10px 12px', borderRadius: 8, display: 'flex', gap: 8 }}>
+                <AlertTriangle size={16} color="#f59e0b" style={{ flexShrink: 0, marginTop: 2 }} />
+                <span>
+                  Barisnya <strong>tidak dihapus</strong> dari spreadsheet. Data survey lapangan yang
+                  sudah tercatat tetap terhubung dan tidak kehilangan induknya. Tindakan ini
+                  bisa dibatalkan lewat tombol <RotateCcw size={12} style={{ verticalAlign: 'middle' }} /> Aktifkan Kembali.
+                </span>
+              </div>
+              <div>
+                <label className="input-label">Alasan (opsional, disimpan di Catatan)</label>
+                <input
+                  type="text"
+                  placeholder="Contoh: lahan tidak bisa dikunjungi, ketua tidak ditemukan, dll..."
+                  className="input"
+                  value={alasanNonaktif}
+                  onChange={(e) => setAlasanNonaktif(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="card-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={() => setDeleteTarget(null)} className="btn btn-secondary btn-sm">
+                Batal
+              </button>
+              <button
+                onClick={() => deleteMutation.mutate(deleteTarget)}
+                disabled={deleteMutation.isPending}
+                className="btn btn-primary btn-sm"
+                style={{ background: '#dc2626', borderColor: '#dc2626' }}
+              >
+                {deleteMutation.isPending ? 'Menyimpan...' : 'Ya, Nonaktifkan'}
+              </button>
             </div>
           </div>
         </div>

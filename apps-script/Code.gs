@@ -7,7 +7,10 @@
  *
  * Kontrak API: lihat API.md (response wrapper { success, data, error, timestamp })
  * Action GET  : ping, getDashboardKPI, getWilayah, getProspek, getAnalis, getSurvey, getPoktan
- * Action POST : createProspek, createSurvey, createAnalis, updateAnalisStatus, authCheck
+ * Action POST : createProspek, updateProspek, deleteProspek, restoreProspek,
+ *               createSurvey, createAnalis, updateAnalisStatus, authCheck
+ * Catatan     : deleteProspek = nonaktifkan (soft delete), bukan hapus baris,
+ *               supaya baris DATA_SURVEY yang mereferensikan ID_PROSPEK tidak yatim.
  * Catatan POST: frontend mengirim Content-Type text/plain (hindari preflight CORS)
  */
 
@@ -69,6 +72,9 @@ function handle(p) {
       case 'getSourceData': data = apiGetSourceData(p); break;
       case 'getPoktan': data = apiGetPoktan(p); break;
       case 'createProspek': data = apiCreateProspek(p); break;
+      case 'updateProspek': data = apiUpdateProspek(p); break;
+      case 'deleteProspek': data = apiDeleteProspek(p); break;
+      case 'restoreProspek': data = apiRestoreProspek(p); break;
       case 'createSurvey': data = apiCreateSurvey(p); break;
       case 'createAnalis': data = apiCreateAnalis(p); break;
       case 'updateAnalisStatus': data = apiUpdateAnalisStatus(p); break;
@@ -222,6 +228,35 @@ function appendRow(sheetName, headers, obj) {
     return v;
   });
   sheet.appendRow(row);
+}
+
+// Tulis ulang beberapa sel pada satu baris yang sudah ada, dicocokkan lewat
+// nama kolom (bukan nomor kolom) supaya aman terhadap susunan header yang
+// berbeda. Nilai kosong/undefined dihapus supaya tidak menimpa kolom lain.
+function updateRowCells(sheetName, rowIdx, valuesByColumn) {
+  var sheet = getSheet(sheetName);
+  if (!sheet) throw new Error('Sheet tidak ditemukan: ' + sheetName);
+  var lastCol = sheet.getLastColumn();
+  var header = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function (h) {
+    var key = str(h).toUpperCase();
+    return HEADER_ALIAS[key] || key;
+  });
+  Object.keys(valuesByColumn).forEach(function (col) {
+    var idx = header.indexOf(String(col).toUpperCase());
+    if (idx < 0) {
+      throw new Error('Kolom tidak ditemukan di ' + sheetName + ': ' + col);
+    }
+    var v = valuesByColumn[col];
+    if (v === undefined) return; // kolom tidak dikirim -> jangan sentuh
+    if (v === null) v = '';
+    if (typeof v === 'string' && /^[=+\-@]/.test(v)) v = "'" + v;
+    sheet.getRange(rowIdx, idx + 1).setValue(v);
+  });
+  var obj = {};
+  header.forEach(function (h, i) {
+    if (h) obj[h] = sheet.getRange(rowIdx, i + 1).getValue();
+  });
+  return obj;
 }
 
 // ----------------------------------------------------------- mappers
@@ -431,22 +466,140 @@ function apiCreateProspek(p) {
   }
   var wil = apiGetWilayah({ idKecamatan: str(p.idKecamatan) });
   if (!wil) throw new Error('idKecamatan tidak dikenal: ' + str(p.idKecamatan));
+  // Analis penanggung jawab mengikuti pengguna yang sedang login. Tanpa payload
+  // idAnalis (mis. panggilan lama dari integrasi lain) tetap jatuh ke AN001
+  // supaya perilakunya sama seperti sebelumnya.
   var idAnalis = str(p.idAnalis) || 'AN001';
   var analis = readRows(SHEETS.ANALIS).map(mapAnalis).filter(function (a) { return a.idAnalis === idAnalis; })[0];
+  if (!analis) throw new Error('idAnalis tidak dikenal: ' + idAnalis);
   var obj = {
     'ID_PROSPEK': nextId(SHEETS.PROSPEK, 'ID_PROSPEK', 'P'),
     'ID_KECAMATAN': wil.idKecamatan,
     'KECAMATAN': wil.kecamatan,
     'NAMA_GAPOKTAN': str(p.namaGapoktan),
     'KOMODITAS': str(p.komoditas) || 'Padi',
-    'ID_ANALIS': idAnalis,
-    'NAMA_ANALIS': analis ? analis.namaAnalis : str(p.namaAnalis) || 'Budi Santoso',
+    'ID_ANALIS': analis.idAnalis,
+    'NAMA_ANALIS': analis.namaAnalis,
     'STATUS': str(p.status) || 'BARU',
     'TANGGAL': str(p.tanggal) || Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'),
     'ESTIMASI_ALSINTAN': str(p.estimasiKebutuhan),
     'CATATAN': str(p.catatan),
   };
   appendRow(SHEETS.PROSPEK, Object.keys(obj), obj);
+  return mapProspek(obj);
+}
+
+// Status yang sah untuk DATA_PROSPEK. Dipakai updateProspek agar tidak ada
+// salah ketik yang mengacaukan filter status di frontend.
+var STATUS_PROSPEK = [
+  'BARU', 'DALAM_PROSPEK', 'SURVEY', 'POTENSIAL',
+  'TIDAK_POTENSIAL', 'CLOSING', 'DISBURSE', 'CAIR',
+];
+
+function findProspekRow(idProspek) {
+  var rows = readRows(SHEETS.PROSPEK);
+  var found = null;
+  rows.forEach(function (r) {
+    if (str(r['ID_PROSPEK']) === idProspek) found = r;
+  });
+  if (!found) throw new Error('Prospek tidak ditemukan: ' + idProspek);
+  return found;
+}
+
+// Ubah isi satu prospek. ID_PROSPEK, ID_KECAMATAN, KECAMATAN, dan TANGGAL
+// sengaja tidak bisa diubah: ID jadi kunci relasi ke DATA_SURVEY, dan
+// kecamatan/Tanggal adalah jejak registrasi.
+function apiUpdateProspek(p) {
+  var idProspek = str(p.idProspek);
+  if (!idProspek) throw new Error('idProspek wajib diisi');
+  var target = findProspekRow(idProspek);
+
+  var patch = {};
+  if (p.namaGapoktan !== undefined) patch['NAMA_GAPOKTAN'] = str(p.namaGapoktan);
+  if (p.komoditas !== undefined) patch['KOMODITAS'] = str(p.komoditas);
+  if (p.estimasiKebutuhan !== undefined) patch['ESTIMASI_ALSINTAN'] = str(p.estimasiKebutuhan);
+  if (p.catatan !== undefined) patch['CATATAN'] = str(p.catatan);
+
+  if (p.status !== undefined && str(p.status)) {
+    var st = str(p.status).toUpperCase();
+    if (STATUS_PROSPEK.indexOf(st) < 0) {
+      throw new Error('Status tidak dikenal: ' + p.status + '. Pilihan: ' + STATUS_PROSPEK.join(', '));
+    }
+    patch['STATUS'] = st;
+  }
+
+  if (p.idAnalis !== undefined && str(p.idAnalis)) {
+    var idAnalis = str(p.idAnalis);
+    var analis = readRows(SHEETS.ANALIS).map(mapAnalis).filter(function (a) {
+      return a.idAnalis === idAnalis;
+    })[0];
+    if (!analis) throw new Error('idAnalis tidak dikenal: ' + idAnalis);
+    if (analis.status !== 'AKTIF') {
+      throw new Error('Analis ' + idAnalis + ' berstatus ' + analis.status + ', tidak bisa ditugaskan');
+    }
+    patch['ID_ANALIS'] = analis.idAnalis;
+    patch['NAMA_ANALIS'] = analis.namaAnalis;
+  }
+
+  if (!Object.keys(patch).length) {
+    throw new Error('Tidak ada perubahan yang dikirim');
+  }
+  var obj = updateRowCells(SHEETS.PROSPEK, target._row, patch);
+  return mapProspek(obj);
+}
+
+// Hapus prospek = nonaktifkan (soft delete): status jadi TIDAK_POTENSIAL dan
+// CATATAN diberi penanda, barisnya tetap di sheet. Alasannya: baris di
+// DATA_SURVEY mereferensikan ID_PROSPEK, jadi menghapus baris induknya
+// membuat data lapangan yatim dan KPI/monitoring ikut rusak.
+function apiDeleteProspek(p) {
+  var idProspek = str(p.idProspek);
+  if (!idProspek) throw new Error('idProspek wajib diisi');
+  var target = findProspekRow(idProspek);
+
+  var survey = readRows(SHEETS.SURVEY).filter(function (r) {
+    return str(r['ID_PROSPEK']) === idProspek;
+  });
+  if (str(target['STATUS']).toUpperCase() === 'TIDAK_POTENSIAL') {
+    return {
+      ok: true, sudahNonaktif: true, jumlahSurvey: survey.length,
+      prospek: mapProspek(target),
+    };
+  }
+
+  var alasan = str(p.alasan);
+  var stempel = 'Dinonaktifkan ' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
+  if (alasan) stempel += ' — ' + alasan;
+  var catatan = str(target['CATATAN']);
+  var catatanBaru = catatan ? catatan + ' | ' + stempel : stempel;
+
+  var obj = updateRowCells(SHEETS.PROSPEK, target._row, {
+    'STATUS': 'TIDAK_POTENSIAL',
+    'CATATAN': catatanBaru,
+  });
+  return {
+    ok: true, sudahNonaktif: false, jumlahSurvey: survey.length,
+    prospek: mapProspek(obj),
+  };
+}
+
+// Balikkan prospek yang dinonaktifkan supaya bisa dipakai lagi tanpa kehilangan
+// riwayat. Status dikembalikan ke nilai yang diminta (default BARU).
+function apiRestoreProspek(p) {
+  var idProspek = str(p.idProspek);
+  if (!idProspek) throw new Error('idProspek wajib diisi');
+  var target = findProspekRow(idProspek);
+  var status = str(p.status).toUpperCase() || 'BARU';
+  if (STATUS_PROSPEK.indexOf(status) < 0) {
+    throw new Error('Status tidak dikenal: ' + p.status);
+  }
+  var catatan = str(target['CATATAN']).replace(
+    /\s*\|\s*Dinonaktifkan \d{4}-\d{2}-\d{2} \d{2}:\d{2}[^|]*$/, ''
+  );
+  var obj = updateRowCells(SHEETS.PROSPEK, target._row, {
+    'STATUS': status,
+    'CATATAN': catatan,
+  });
   return mapProspek(obj);
 }
 

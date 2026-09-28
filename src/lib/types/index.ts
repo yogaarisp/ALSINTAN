@@ -332,6 +332,32 @@ export interface CreateProspekForm {
   komoditas: string
   estimasiKebutuhan?: string
   catatan?: string
+  /** Dikirim dari sesi login supaya prospek tidak semua menumpuk ke AN001. */
+  idAnalis?: string
+  namaAnalis?: string
+}
+
+/**
+ * Field prospek yang boleh diubah setelah dibuat.
+ * ID_PROSPEK, ID_KECAMATAN, KECAMATAN, dan TANGGAL dikunci: ID jadi kunci
+ * relasi ke DATA_SURVEY, kecamatan/tanggal adalah jejak registrasi awal.
+ */
+export interface UpdateProspekForm {
+  idProspek: string
+  namaGapoktan?: string
+  komoditas?: string
+  estimasiKebutuhan?: string
+  catatan?: string
+  status?: StatusProspek
+  idAnalis?: string
+}
+
+/** Hasil deleteProspek: soft delete, jadi baris di sheet tetap ada. */
+export interface DeleteProspekResult {
+  ok: boolean
+  sudahNonaktif: boolean
+  jumlahSurvey: number
+  prospek: DataProspek
 }
 
 export interface CreateSurveyForm {
