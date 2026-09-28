@@ -13,10 +13,12 @@ import {
   Building,
   User,
   Sparkles,
+  Users,
 } from 'lucide-react'
 import { getProspek, createProspek } from '@/lib/api/prospek'
 import { getWilayah } from '@/lib/api/wilayah'
-import type { StatusProspek, CreateProspekForm, DataProspek, MasterWilayah } from '@/lib/types'
+import { getPoktan } from '@/lib/api/poktan'
+import type { StatusProspek, CreateProspekForm, DataProspek, MasterWilayah, MasterPoktan } from '@/lib/types'
 import {
   formatDate,
   getStatusProspekInfo,
@@ -27,7 +29,7 @@ import { MOCK_WILAYAH, MOCK_PROSPEK } from '@/lib/mock/mock-data'
 
 const prospekSchema = z.object({
   idKecamatan: z.string().min(1, 'Pilih kecamatan'),
-  namaGapoktan: z.string().min(3, 'Nama Gapoktan minimal 3 karakter'),
+  namaGapoktan: z.string().min(3, 'Pilih poktan terlebih dahulu'),
   komoditas: z.string().min(1, 'Pilih komoditas'),
   estimasiKebutuhan: z.string().optional(),
   catatan: z.string().optional(),
@@ -42,6 +44,10 @@ export default function ProspekPage() {
   const [kecamatanFilter, setKecamatanFilter] = useState<string>(initialKecamatan)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [selectedProspek, setSelectedProspek] = useState<DataProspek | null>(null)
+  // state untuk form tambah prospek
+  const [formKecamatan, setFormKecamatan] = useState('')
+  const [poktanSearch, setPoktanSearch] = useState('')
+  const [selectedPoktan, setSelectedPoktan] = useState<MasterPoktan | null>(null)
 
   const queryClient = useQueryClient()
 
@@ -72,10 +78,28 @@ export default function ProspekPage() {
     initialDataUpdatedAt: 0,
   })
 
+  // Load poktan saat kecamatan di form dipilih
+  const { data: poktanData, isFetching: loadingPoktan } = useQuery({
+    queryKey: ['poktan', formKecamatan],
+    queryFn: () => getPoktan({ kecamatan: formKecamatan, limit: 1000 }),
+    enabled: formKecamatan !== '',
+    staleTime: 60 * 60 * 1000,
+    retry: 1,
+  })
+
+  const poktanList = poktanData?.items ?? []
+  const filteredPoktan = poktanSearch
+    ? poktanList.filter(p =>
+        p.namaPoktan.toLowerCase().includes(poktanSearch.toLowerCase()) ||
+        p.desa.toLowerCase().includes(poktanSearch.toLowerCase())
+      )
+    : poktanList
+
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<CreateProspekForm>({
     resolver: zodResolver(prospekSchema),
@@ -87,13 +111,20 @@ export default function ProspekPage() {
     },
   })
 
+  const handleCloseCreate = () => {
+    setIsCreateOpen(false)
+    setFormKecamatan('')
+    setPoktanSearch('')
+    setSelectedPoktan(null)
+    reset()
+  }
+
   const createMutation = useMutation({
     mutationFn: (form: CreateProspekForm) => createProspek(form),
     onSuccess: (newProspek) => {
       toast.success(`Prospek ${newProspek.namaGapoktan} berhasil dicatat`)
       queryClient.invalidateQueries({ queryKey: ['prospek'] })
-      setIsCreateOpen(false)
-      reset()
+      handleCloseCreate()
     },
     onError: (err: any) => {
       toast.error(err.message || 'Gagal menyimpan prospek')
@@ -299,7 +330,7 @@ export default function ProspekPage() {
             justifyContent: 'center',
             padding: 16,
           }}
-          onClick={() => setIsCreateOpen(false)}
+          onClick={handleCloseCreate}
         >
           <div
             className="card animate-slide-up"
@@ -313,40 +344,105 @@ export default function ProspekPage() {
                   Tambah Prospek Alsintan Baru
                 </h3>
               </div>
-              <button
-                onClick={() => setIsCreateOpen(false)}
-                className="btn btn-ghost btn-icon btn-sm"
-              >
-                ✕
-              </button>
+              <button onClick={handleCloseCreate} className="btn btn-ghost btn-icon btn-sm">✕</button>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)}>
               <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {/* Kecamatan */}
+
+                {/* Step 1 — Pilih Kecamatan */}
                 <div>
-                  <label className="input-label">Wilayah Kecamatan</label>
-                  <select className={`input ${errors.idKecamatan ? 'error' : ''}`} {...register('idKecamatan')}>
+                  <label className="input-label">1. Wilayah Kecamatan</label>
+                  <select
+                    className={`input ${errors.idKecamatan ? 'error' : ''}`}
+                    {...register('idKecamatan')}
+                    onChange={(e) => {
+                      register('idKecamatan').onChange(e)
+                      const wil = wilayahList.find(w => w.idKecamatan === e.target.value)
+                      setFormKecamatan(wil?.kecamatan || '')
+                      setSelectedPoktan(null)
+                      setPoktanSearch('')
+                      setValue('namaGapoktan', '')
+                    }}
+                  >
                     <option value="">-- Pilih Kecamatan --</option>
                     {wilayahList.map((w) => (
                       <option key={w.idKecamatan} value={w.idKecamatan}>
-                        Kec. {w.kecamatan} (Luas: {w.luasLahan} Ha)
+                        Kec. {w.kecamatan}
                       </option>
                     ))}
                   </select>
                   {errors.idKecamatan && <p className="input-error">{errors.idKecamatan.message}</p>}
                 </div>
 
-                {/* Nama Gapoktan */}
+                {/* Step 2 — Pilih Poktan */}
                 <div>
-                  <label className="input-label">Nama Gapoktan / Kelompok Tani</label>
-                  <input
-                    type="text"
-                    placeholder="Contoh: Gapoktan Tani Makmur"
-                    className={`input ${errors.namaGapoktan ? 'error' : ''}`}
-                    {...register('namaGapoktan')}
-                  />
-                  {errors.namaGapoktan && <p className="input-error">{errors.namaGapoktan.message}</p>}
+                  <label className="input-label">
+                    2. Pilih Poktan
+                    {formKecamatan && (
+                      <span style={{ color: '#64748b', fontWeight: 400, marginLeft: 6 }}>
+                        — Kec. {formKecamatan} ({poktanList.length} poktan)
+                      </span>
+                    )}
+                  </label>
+
+                  {!formKecamatan ? (
+                    <div style={{ padding: '10px 12px', background: '#f8fafc', borderRadius: 8, fontSize: '0.8125rem', color: '#94a3b8', border: '1px dashed #e2e8f0' }}>
+                      Pilih kecamatan dulu untuk menampilkan daftar poktan
+                    </div>
+                  ) : loadingPoktan ? (
+                    <div className="skeleton" style={{ height: 40, borderRadius: 8 }} />
+                  ) : (
+                    <>
+                      {/* Search poktan */}
+                      <div style={{ position: 'relative', marginBottom: 6 }}>
+                        <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                        <input
+                          className="input"
+                          style={{ paddingLeft: 30, fontSize: '0.8125rem' }}
+                          placeholder="Cari nama poktan atau desa..."
+                          value={poktanSearch}
+                          onChange={(e) => setPoktanSearch(e.target.value)}
+                        />
+                      </div>
+                      {/* Dropdown poktan */}
+                      <select
+                        className={`input ${errors.namaGapoktan ? 'error' : ''}`}
+                        size={5}
+                        style={{ height: 'auto' }}
+                        value={selectedPoktan?.idPoktan || ''}
+                        onChange={(e) => {
+                          const pok = poktanList.find(p => p.idPoktan === e.target.value)
+                          if (pok) {
+                            setSelectedPoktan(pok)
+                            setValue('namaGapoktan', pok.namaPoktan, { shouldValidate: true })
+                          }
+                        }}
+                      >
+                        <option value="">-- Pilih Poktan --</option>
+                        {filteredPoktan.map((p) => (
+                          <option key={p.idPoktan} value={p.idPoktan}>
+                            {p.namaPoktan} — {p.desa}
+                          </option>
+                        ))}
+                      </select>
+                      {/* Poktan terpilih */}
+                      {selectedPoktan && (
+                        <div style={{ marginTop: 6, padding: '8px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, fontSize: '0.8125rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <Users size={14} color="#16a34a" />
+                            <strong style={{ color: '#15803d' }}>{selectedPoktan.namaPoktan}</strong>
+                          </div>
+                          <div style={{ color: '#64748b', marginTop: 2 }}>
+                            Ketua: {selectedPoktan.ketua || '-'} · Desa {selectedPoktan.desa} · {selectedPoktan.jumlahAnggota} anggota
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {/* hidden field namaGapoktan untuk validasi */}
+                  <input type="hidden" {...register('namaGapoktan')} />
+                  {errors.namaGapoktan && <p className="input-error">Pilih poktan terlebih dahulu</p>}
                 </div>
 
                 {/* Komoditas */}
@@ -376,8 +472,8 @@ export default function ProspekPage() {
                 <div>
                   <label className="input-label">Catatan Lapangan</label>
                   <textarea
-                    rows={3}
-                    placeholder="Keterangan akses lahan, kontak ketua gapoktan, dll..."
+                    rows={2}
+                    placeholder="Keterangan akses lahan, kontak ketua, dll..."
                     className="input"
                     {...register('catatan')}
                   />
@@ -385,16 +481,12 @@ export default function ProspekPage() {
               </div>
 
               <div className="card-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                <button
-                  type="button"
-                  onClick={() => setIsCreateOpen(false)}
-                  className="btn btn-secondary btn-sm"
-                >
+                <button type="button" onClick={handleCloseCreate} className="btn btn-secondary btn-sm">
                   Batal
                 </button>
                 <button
                   type="submit"
-                  disabled={createMutation.isPending}
+                  disabled={createMutation.isPending || !selectedPoktan}
                   className="btn btn-primary btn-sm"
                 >
                   {createMutation.isPending ? 'Menyimpan...' : 'Simpan Prospek'}
