@@ -205,25 +205,36 @@ export default function MonitoringPage() {
               { label: 'Cair ✓',       color: '#0d9488', bg: '#f0fdfa', count: all.filter(p => p.status === 'CAIR').length },
             ]
             const max = Math.max(...steps.map(s => s.count), 1)
+            const BAR_MAX_H = 100
+            const BAR_MIN_H = 20
             return (
-              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
                 {steps.map((s, i) => (
-                  <div key={i} style={{ flex: '1 1 80px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: '1.25rem', fontWeight: 800, color: s.color }}>{s.count}</span>
-                    <div style={{
-                      width: '100%',
-                      height: Math.max(20, Math.round((s.count / max) * 100)),
-                      background: s.bg,
-                      border: `2px solid ${s.color}`,
-                      borderRadius: 6,
-                      transition: 'height 0.3s',
-                    }} />
-                    <span style={{ fontSize: '0.7rem', fontWeight: 600, color: s.color, textAlign: 'center' }}>{s.label}</span>
-                    {i < steps.length - 1 && (
-                      <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>
-                        {s.count > 0 ? `→ ${Math.round((steps[i + 1].count / s.count) * 100)}%` : '→'}
-                      </span>
-                    )}
+                  <div key={i} style={{ flex: '1 1 80px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                    {/* angka — baris tetap, tidak bergeser */}
+                    <span style={{ fontSize: '1.25rem', fontWeight: 800, color: s.color, lineHeight: 1 }}>
+                      {s.count}
+                    </span>
+                    {/* area bar — tinggi fixed, bar tumbuh dari bawah */}
+                    <div style={{ width: '100%', height: BAR_MAX_H, display: 'flex', alignItems: 'flex-end' }}>
+                      <div style={{
+                        width: '100%',
+                        height: Math.max(BAR_MIN_H, Math.round((s.count / max) * BAR_MAX_H)),
+                        background: s.bg,
+                        border: `2px solid ${s.color}`,
+                        borderRadius: 6,
+                        transition: 'height 0.3s',
+                      }} />
+                    </div>
+                    {/* label — baris tetap di bawah */}
+                    <span style={{ fontSize: '0.7rem', fontWeight: 600, color: s.color, textAlign: 'center', lineHeight: 1.2 }}>
+                      {s.label}
+                    </span>
+                    <span style={{ fontSize: '0.65rem', color: '#94a3b8', minHeight: 14 }}>
+                      {i < steps.length - 1
+                        ? (s.count > 0 ? `→ ${Math.round((steps[i + 1].count / s.count) * 100)}%` : '→')
+                        : ''}
+                    </span>
                   </div>
                 ))}
               </div>
