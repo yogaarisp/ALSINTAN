@@ -3,6 +3,7 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import {
   Database,
   ExternalLink,
+  FolderOpen,
   Search,
   RefreshCw,
   FileSpreadsheet,
@@ -137,6 +138,17 @@ export default function SumberDataPage() {
             Buka Spreadsheet
           </a>
         )}
+        <a
+          className="btn btn-ghost btn-sm"
+          href="https://drive.google.com/drive/folders/1SSz9RlEF4AGuspbiRfy55xsxS3xQS_Dy"
+          target="_blank"
+          rel="noreferrer"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}
+          title="Buka folder ALSINTAN di Google Drive"
+        >
+          <FolderOpen size={14} />
+          Folder Drive
+        </a>
       </div>
 
       <div className="sumber-data-layout">
