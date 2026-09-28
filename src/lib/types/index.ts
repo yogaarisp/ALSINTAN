@@ -19,6 +19,8 @@ export type StatusProspek =
   | 'POTENSIAL'
   | 'TIDAK_POTENSIAL'
   | 'CLOSING'
+  | 'DISBURSE'
+  | 'CAIR'
 
 // ─────────────────────────────────────────
 // ENUM: Status Survey

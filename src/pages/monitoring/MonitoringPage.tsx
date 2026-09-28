@@ -14,6 +14,8 @@ import {
   Target,
   Sparkles,
   Award,
+  Banknote,
+  CheckCircle2,
 } from 'lucide-react'
 import { getWilayah } from '@/lib/api/wilayah'
 import { getProspek } from '@/lib/api/prospek'
@@ -72,12 +74,16 @@ export default function MonitoringPage() {
     )
     const closing = prospeks.filter((p) => p.status === 'CLOSING').length
     const survey = prospeks.filter((p) => p.status === 'SURVEY' || p.status === 'POTENSIAL').length
+    const disburse = prospeks.filter((p) => p.status === 'DISBURSE').length
+    const cair = prospeks.filter((p) => p.status === 'CAIR').length
     return {
       ...analis,
       totalProspek: prospeks.length,
       surveyCount: survey,
       closingCount: closing,
-      conversionRate: prospeks.length > 0 ? Math.round((closing / prospeks.length) * 100) : 0,
+      disburseCount: disburse,
+      cairCount: cair,
+      conversionRate: prospeks.length > 0 ? Math.round((cair / prospeks.length) * 100) : 0,
     }
   })
 
@@ -155,6 +161,75 @@ export default function MonitoringPage() {
           </div>
           <div style={{ fontSize: '0.75rem', color: '#16a34a', marginTop: 4 }}>Realisasi Pengadaan Alsintan</div>
         </div>
+
+        <div className="kpi-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.8125rem', color: '#64748b', fontWeight: 600 }}>Disburse</span>
+            <Banknote size={18} color="#b45309" />
+          </div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#b45309', marginTop: 8 }}>
+            {isLoading ? <div className="skeleton" style={{ height: 32, width: 40 }} /> : (prospekData?.items || []).filter(p => p.status === 'DISBURSE').length}
+          </div>
+          <div style={{ fontSize: '0.75rem', color: '#b45309', marginTop: 4 }}>Alsintan Sedang Dikirim</div>
+        </div>
+
+        <div className="kpi-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.8125rem', color: '#64748b', fontWeight: 600 }}>Sudah Cair</span>
+            <CheckCircle2 size={18} color="#0d9488" />
+          </div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0d9488', marginTop: 8 }}>
+            {isLoading ? <div className="skeleton" style={{ height: 32, width: 40 }} /> : (prospekData?.items || []).filter(p => p.status === 'CAIR').length}
+          </div>
+          <div style={{ fontSize: '0.75rem', color: '#0d9488', marginTop: 4 }}>Poktan Sudah Terima Alsintan</div>
+        </div>
+      </div>
+      <div className="card">
+        <div className="card-header">
+          <div>
+            <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>Funnel Progres Alsintan</h2>
+            <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>
+              Alur prospek dari identifikasi awal hingga alsintan benar-benar cair diterima poktan
+            </p>
+          </div>
+        </div>
+        <div className="card-body">
+          {(() => {
+            const all = prospekData?.items || []
+            const steps = [
+              { label: 'Baru',          color: '#64748b', bg: '#f1f5f9', count: all.filter(p => p.status === 'BARU').length },
+              { label: 'Survey',        color: '#7c3aed', bg: '#f5f3ff', count: all.filter(p => p.status === 'SURVEY' || p.status === 'DALAM_PROSPEK').length },
+              { label: 'Potensial',     color: '#16a34a', bg: '#f0fdf4', count: all.filter(p => p.status === 'POTENSIAL').length },
+              { label: 'Closing',       color: '#d97706', bg: '#fffbeb', count: all.filter(p => p.status === 'CLOSING').length },
+              { label: 'Disburse',      color: '#b45309', bg: '#fef3c7', count: all.filter(p => p.status === 'DISBURSE').length },
+              { label: 'Cair ✓',       color: '#0d9488', bg: '#f0fdfa', count: all.filter(p => p.status === 'CAIR').length },
+            ]
+            const max = Math.max(...steps.map(s => s.count), 1)
+            return (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                {steps.map((s, i) => (
+                  <div key={i} style={{ flex: '1 1 80px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: '1.25rem', fontWeight: 800, color: s.color }}>{s.count}</span>
+                    <div style={{
+                      width: '100%',
+                      height: Math.max(20, Math.round((s.count / max) * 100)),
+                      background: s.bg,
+                      border: `2px solid ${s.color}`,
+                      borderRadius: 6,
+                      transition: 'height 0.3s',
+                    }} />
+                    <span style={{ fontSize: '0.7rem', fontWeight: 600, color: s.color, textAlign: 'center' }}>{s.label}</span>
+                    {i < steps.length - 1 && (
+                      <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>
+                        {s.count > 0 ? `→ ${Math.round((steps[i + 1].count / s.count) * 100)}%` : '→'}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
+        </div>
       </div>
 
       {/* Comparison Chart: Baseline Dinas Pertanian vs Aktual Prospek Analis (PRD Section 4.3 & 6H) */}
@@ -209,6 +284,8 @@ export default function MonitoringPage() {
                 <th>Total Prospek</th>
                 <th>Survey / Potensial</th>
                 <th>Closing</th>
+                <th>Disburse</th>
+                <th>Cair</th>
                 <th>Conversion Rate</th>
               </tr>
             </thead>
@@ -232,7 +309,9 @@ export default function MonitoringPage() {
                   </td>
                   <td data-label="Total Prospek" style={{ fontWeight: 600 }}>{analis.totalProspek}</td>
                   <td data-label="Survey / Potensial">{analis.surveyCount}</td>
-                  <td data-label="Closing" style={{ fontWeight: 700, color: '#16a34a' }}>{analis.closingCount}</td>
+                  <td data-label="Closing" style={{ fontWeight: 700, color: '#d97706' }}>{analis.closingCount}</td>
+                  <td data-label="Disburse" style={{ fontWeight: 700, color: '#b45309' }}>{analis.disburseCount}</td>
+                  <td data-label="Cair" style={{ fontWeight: 700, color: '#0d9488' }}>{analis.cairCount}</td>
                   <td data-label="Conversion Rate">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ fontWeight: 600, fontSize: '0.8125rem' }}>{analis.conversionRate}%</span>

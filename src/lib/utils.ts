@@ -102,15 +102,17 @@ export function getPriorityLevelInfo(level: PriorityLevel) {
 // Status Prospek display
 // ─────────────────────────────────────────
 export function getStatusProspekInfo(status: StatusProspek) {
-  const map = {
-    BARU: { label: 'Baru', badge: 'bg-slate-100 text-slate-700 border-slate-200' },
-    DALAM_PROSPEK: { label: 'Dalam Prospek', badge: 'bg-blue-100 text-blue-700 border-blue-200' },
-    SURVEY: { label: 'Survey', badge: 'bg-purple-100 text-purple-700 border-purple-200' },
-    POTENSIAL: { label: 'Potensial', badge: 'bg-green-100 text-green-700 border-green-200' },
-    TIDAK_POTENSIAL: { label: 'Tidak Potensial', badge: 'bg-red-100 text-red-700 border-red-200' },
-    CLOSING: { label: 'Closing', badge: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+  const map: Record<StatusProspek, { label: string; badge: string; step: number }> = {
+    BARU:            { label: 'Baru',           badge: 'bg-slate-100 text-slate-700 border-slate-200',   step: 1 },
+    DALAM_PROSPEK:   { label: 'Dalam Prospek',  badge: 'bg-blue-100 text-blue-700 border-blue-200',      step: 2 },
+    SURVEY:          { label: 'Survey',          badge: 'bg-purple-100 text-purple-700 border-purple-200', step: 3 },
+    POTENSIAL:       { label: 'Potensial',       badge: 'bg-green-100 text-green-700 border-green-200',   step: 4 },
+    TIDAK_POTENSIAL: { label: 'Tidak Potensial', badge: 'bg-red-100 text-red-700 border-red-200',         step: 0 },
+    CLOSING:         { label: 'Closing',         badge: 'bg-emerald-100 text-emerald-700 border-emerald-200', step: 5 },
+    DISBURSE:        { label: 'Disburse',        badge: 'bg-amber-100 text-amber-700 border-amber-200',   step: 6 },
+    CAIR:            { label: 'Cair',            badge: 'bg-teal-100 text-teal-700 border-teal-200',      step: 7 },
   }
-  return map[status]
+  return map[status] ?? { label: status, badge: 'bg-slate-100 text-slate-700 border-slate-200', step: 0 }
 }
 
 // ─────────────────────────────────────────

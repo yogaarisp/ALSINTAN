@@ -180,6 +180,8 @@ export default function ProspekPage() {
               <option value="POTENSIAL">Potensial</option>
               <option value="TIDAK_POTENSIAL">Tidak Potensial</option>
               <option value="CLOSING">Closing</option>
+              <option value="DISBURSE">Disburse</option>
+              <option value="CAIR">Cair</option>
             </select>
           </div>
 
