@@ -31,6 +31,7 @@ var SOURCES = [
   { key: 'beras', nama: 'Produksi Beras 2025', kategori: 'Produksi', id: '1s41NFQjZBdlQWW_6d-NBNMnEkYLufyf-Z-bCgaxOiC4' },
   { key: 'rekap_alsintan', nama: 'Rekap Alsintan s.d. April 2026', kategori: 'Alsintan', id: '1z5zDzvksX5xT6C_OvM_Kv_cFYPuGdOPvAKxsxp7LBoY' },
   { key: 'rekap_bulanan', nama: 'Rekap Bulanan SP TP', kategori: 'SP TP', id: '1DzlqupA0M-6Ehs6QSwTo_o7oU_g7uVYROCSr8aiuzt8' },
+  { key: 'baseline', nama: 'SIAP ALSINTAN - Baseline (MASTER)', kategori: 'Database', id: '1EZ3XYXRaCkJmHhLbhVkrzKqcFrtcN7DX3k7BNZc20F4' },
 ];
 
 // ----------------------------------------------------------- entry points

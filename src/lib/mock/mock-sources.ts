@@ -89,6 +89,23 @@ export const DEFAULT_SOURCES: SourceInfo[] = [
       { nama: 'Ubi Jalar', baris: 28, kolom: 66 },
     ],
   },
+  {
+    key: 'baseline',
+    nama: 'SIAP ALSINTAN - Baseline (MASTER)',
+    kategori: 'Database',
+    url: 'https://docs.google.com/spreadsheets/d/1EZ3XYXRaCkJmHhLbhVkrzKqcFrtcN7DX3k7BNZc20F4/edit',
+    status: 'OK',
+    tabs: [
+      { nama: 'IMPORT_BAKU_SAWAH_DESA', baris: 495, kolom: 3 },
+      { nama: 'REKAP_KECAMATAN', baris: 18, kolom: 2 },
+      { nama: 'MASTER_DESA', baris: 495, kolom: 5 },
+      { nama: 'MASTER_WILAYAH', baris: 17, kolom: 10 },
+      { nama: 'DATA_PROSPEK', baris: 3, kolom: 11 },
+      { nama: 'DATA_SURVEY', baris: 1, kolom: 17 },
+      { nama: 'MASTER_ANALIS', baris: 3, kolom: 5 },
+      { nama: 'USERS', baris: 5, kolom: 5 },
+    ],
+  },
 ]
 
 export const DEFAULT_POKTAN_BAGELEN: SourceData = {
