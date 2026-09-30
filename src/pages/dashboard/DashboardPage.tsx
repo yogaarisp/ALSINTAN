@@ -872,7 +872,7 @@ export default function DashboardPage() {
             <thead>
               <tr>
                 <th>Tanggal</th>
-                <th>Gapoktan</th>
+                <th>Nama Prospek</th>
                 <th>Kecamatan</th>
                 <th>Komoditas</th>
                 <th>Analis Lapangan</th>
@@ -897,7 +897,7 @@ export default function DashboardPage() {
                       <td data-label="Tanggal" style={{ fontSize: '0.8125rem', color: '#64748b', whiteSpace: 'nowrap' }}>
                         {formatDate(p.tanggal)}
                       </td>
-                      <td data-label="Gapoktan" style={{ fontWeight: 600, color: '#0f172a' }}>{p.namaGapoktan}</td>
+                      <td data-label="Nama Prospek" style={{ fontWeight: 600, color: '#0f172a' }}>{p.namaProspek || p.namaGapoktan}</td>
                       <td data-label="Kecamatan" style={{ color: '#334155' }}>{p.kecamatan}</td>
                       <td data-label="Komoditas">
                         <span

@@ -27,6 +27,9 @@ export type StatusProspek =
 // PRD Section 14 — TODO: CONFIRM final workflow
 // ─────────────────────────────────────────
 export type StatusSurvey =
+  | 'SURVEY'
+  | 'ANALISA'
+  | 'DISBURSE'
   | 'BELUM_SURVEY'
   | 'SURVEY_BERJALAN'
   | 'SURVEY_SELESAI'
@@ -116,13 +119,15 @@ export interface DataProspek {
   idProspek: string
   idKecamatan: string
   kecamatan: string
+  namaProspek?: string
   namaGapoktan: string
   komoditas: string
   idAnalis: string
   namaAnalis: string
   status: StatusProspek
   tanggal: string             // ISO date string
-  estimasiKebutuhan?: string  // TODO: CONFIRM format
+  estimasiKebutuhan?: string  // Kebutuhan alat alsintan
+  estimasiPlafon?: number     // Plafon kredit (Rupiah)
   catatan?: string
   // Relations
   wilayahDetail?: MasterWilayah
@@ -137,13 +142,16 @@ export interface DataProspek {
 export interface DataSurvey {
   idSurvey: string
   idProspek: string
+  namaProspek?: string
   namaGapoktan: string
   namaKetua?: string            // auto-fill dari Master Poktan 2026
   jumlahAnggota?: number
   luasSawah?: number          // Hektar
   jenisAlsintan?: string
   estimasiHarga?: number      // Rupiah
+  estimasiPlafon?: number     // Rupiah (alias)
   foto?: string[]             // URLs
+  fotoUrl?: string            // Google Drive URL
   latitude?: number
   longitude?: number
   accuracy?: number           // meter
@@ -328,9 +336,11 @@ export interface SourceData {
 // ─────────────────────────────────────────
 export interface CreateProspekForm {
   idKecamatan: string
-  namaGapoktan: string
+  namaProspek: string
+  namaGapoktan?: string
   komoditas: string
   estimasiKebutuhan?: string
+  estimasiPlafon?: number
   catatan?: string
   /** Dikirim dari sesi login supaya prospek tidak semua menumpuk ke AN001. */
   idAnalis?: string
@@ -344,9 +354,11 @@ export interface CreateProspekForm {
  */
 export interface UpdateProspekForm {
   idProspek: string
+  namaProspek?: string
   namaGapoktan?: string
   komoditas?: string
   estimasiKebutuhan?: string
+  estimasiPlafon?: number
   catatan?: string
   status?: StatusProspek
   idAnalis?: string
@@ -362,16 +374,48 @@ export interface DeleteProspekResult {
 
 export interface CreateSurveyForm {
   idProspek: string
-  namaGapoktan: string
+  namaProspek?: string
+  namaGapoktan?: string
+  kecamatan?: string
   namaKetua?: string
   jumlahAnggota?: number
   luasSawah?: number
   jenisAlsintan?: string
   estimasiHarga?: number
+  estimasiPlafon?: number
   foto?: FileList
+  fotoBase64?: string
+  fotoName?: string
   latitude?: number
   longitude?: number
   accuracy?: number
+  catatan?: string
+  idAnalis?: string
+  namaAnalis?: string
+  status?: StatusSurvey
+}
+
+export interface UpdateSurveyForm {
+  idSurvey: string
+  namaProspek?: string
+  namaGapoktan?: string
+  jenisAlsintan?: string
+  estimasiHarga?: number
+  catatan?: string
+  status?: StatusSurvey
+}
+
+export interface RekapPencairan {
+  idPencairan: string
+  tanggalPencairan: string
+  idProspek: string
+  idSurvey?: string
+  namaProspek: string
+  kecamatan: string
+  jenisAlsintan: string
+  plafonPencairan: number
+  idAnalis: string
+  namaAnalis: string
   catatan?: string
 }
 

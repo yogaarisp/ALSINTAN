@@ -33,6 +33,7 @@ import type {
 } from '@/lib/types'
 import {
   formatDate,
+  formatRupiah,
   getStatusProspekInfo,
 } from '@/lib/utils'
 
@@ -41,19 +42,19 @@ import { MOCK_WILAYAH, MOCK_PROSPEK } from '@/lib/mock/mock-data'
 
 const prospekSchema = z.object({
   idKecamatan: z.string().min(1, 'Pilih kecamatan'),
-  namaGapoktan: z.string().min(3, 'Nama Gapoktan minimal 3 karakter'),
+  namaProspek: z.string().min(3, 'Nama prospek minimal 3 karakter'),
   komoditas: z.string().min(1, 'Pilih komoditas'),
   estimasiKebutuhan: z.string().optional(),
-  catatan: z.string().optional(),
+  estimasiPlafon: z.coerce.number().min(0, 'Estimasi plafon tidak boleh negatif').optional(),
 })
 
 const editProspekSchema = z.object({
-  namaGapoktan: z.string().min(3, 'Nama Gapoktan minimal 3 karakter'),
+  namaProspek: z.string().min(3, 'Nama prospek minimal 3 karakter'),
   komoditas: z.string().min(1, 'Pilih komoditas'),
   status: z.string().min(1, 'Pilih status'),
   idAnalis: z.string().min(1, 'Pilih Analis penanggung jawab'),
   estimasiKebutuhan: z.string().optional(),
-  catatan: z.string().optional(),
+  estimasiPlafon: z.coerce.number().min(0, 'Estimasi plafon tidak boleh negatif').optional(),
 })
 
 type EditProspekFormData = z.infer<typeof editProspekSchema>
@@ -161,14 +162,17 @@ export default function ProspekPage() {
       idKecamatan: initialKecamatan
         ? wilayahList.find((w) => w.kecamatan === initialKecamatan)?.idKecamatan || ''
         : '',
+      namaProspek: '',
       komoditas: 'Padi',
+      estimasiKebutuhan: '',
+      estimasiPlafon: undefined,
     },
   })
 
   const createMutation = useMutation({
     mutationFn: (form: CreateProspekForm) => createProspek(form),
     onSuccess: (newProspek) => {
-      toast.success(`Prospek ${newProspek.namaGapoktan} berhasil dicatat`)
+      toast.success(`Prospek ${newProspek.namaProspek || newProspek.namaGapoktan} berhasil dicatat`)
       queryClient.invalidateQueries({ queryKey: ['prospek'] })
       setIsCreateOpen(false)
       reset()
@@ -198,21 +202,23 @@ export default function ProspekPage() {
   } = useForm<EditProspekFormData>({
     resolver: zodResolver(editProspekSchema),
     defaultValues: {
-      namaGapoktan: '',
+      namaProspek: '',
       komoditas: 'Padi',
       status: 'BARU',
       idAnalis: '',
+      estimasiKebutuhan: '',
+      estimasiPlafon: undefined,
     },
   })
 
   const openEdit = (p: DataProspek) => {
     resetEdit({
-      namaGapoktan: p.namaGapoktan,
+      namaProspek: p.namaProspek || p.namaGapoktan,
       komoditas: p.komoditas || 'Padi',
       status: p.status,
       idAnalis: p.idAnalis || '',
       estimasiKebutuhan: p.estimasiKebutuhan || '',
-      catatan: p.catatan || '',
+      estimasiPlafon: p.estimasiPlafon,
     })
     setSelectedProspek(null)
     setEditingProspek(p)
@@ -222,17 +228,17 @@ export default function ProspekPage() {
     mutationFn: (form: EditProspekFormData) =>
       updateProspek({
         idProspek: editingProspek!.idProspek,
-        namaGapoktan: form.namaGapoktan,
+        namaProspek: form.namaProspek,
         komoditas: form.komoditas,
         status: form.status as StatusProspek,
         // Hanya kirim idAnalis kalau benar-benar diganti. Kalau tidak, backend
         // akan menolak karena analis lama mungkin sudah TIDAK_AKTIF.
         ...(form.idAnalis !== editingProspek!.idAnalis ? { idAnalis: form.idAnalis } : {}),
         estimasiKebutuhan: form.estimasiKebutuhan,
-        catatan: form.catatan,
+        estimasiPlafon: form.estimasiPlafon,
       }),
     onSuccess: (updated) => {
-      toast.success(`Prospek ${updated.namaGapoktan} diperbarui`)
+      toast.success(`Prospek ${updated.namaProspek || updated.namaGapoktan} diperbarui`)
       queryClient.invalidateQueries({ queryKey: ['prospek'] })
       setEditingProspek(null)
     },
@@ -265,7 +271,7 @@ export default function ProspekPage() {
   const restoreMutation = useMutation({
     mutationFn: (p: DataProspek) => restoreProspek(p.idProspek, 'BARU'),
     onSuccess: (restored) => {
-      toast.success(`Prospek ${restored.namaGapoktan} diaktifkan kembali`)
+      toast.success(`Prospek ${restored.namaProspek || restored.namaGapoktan} diaktifkan kembali`)
       queryClient.invalidateQueries({ queryKey: ['prospek'] })
       setSelectedProspek(null)
     },
@@ -277,8 +283,9 @@ export default function ProspekPage() {
   // Filter items
   const items = prospekData?.items || []
   const filteredItems = items.filter((p) => {
+    const nama = (p.namaProspek || p.namaGapoktan || '').toLowerCase()
     const matchSearch =
-      p.namaGapoktan.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      nama.includes(searchQuery.toLowerCase()) ||
       p.kecamatan.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.namaAnalis ?? '').toLowerCase().includes(searchQuery.toLowerCase())
 
@@ -326,7 +333,7 @@ export default function ProspekPage() {
             <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
             <input
               type="text"
-              placeholder="Cari Gapoktan, Analis, atau kecamatan..."
+              placeholder="Cari nama prospek, Analis, atau kecamatan..."
               className="input"
               style={{ paddingLeft: 36 }}
               value={searchQuery}
@@ -384,11 +391,12 @@ export default function ProspekPage() {
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Gapoktan</th>
+                <th>Nama Prospek</th>
                 <th>Kecamatan</th>
                 <th>Komoditas</th>
                 <th>Analis Penanggung Jawab</th>
-                <th>Estimasi Alsintan</th>
+                <th>Kebutuhan Alat</th>
+                <th>Estimasi Plafon</th>
                 <th>Tanggal</th>
                 <th>Status</th>
                 <th style={{ textAlign: 'right' }}>Aksi</th>
@@ -398,7 +406,7 @@ export default function ProspekPage() {
               {!prospekData || isProspekLoading ? (
                 [1, 2, 3, 4].map((i) => (
                   <tr key={i}>
-                    <td colSpan={9}>
+                    <td colSpan={10}>
                       <div className="skeleton" style={{ height: 28, width: '100%' }} />
                     </td>
                   </tr>
@@ -411,8 +419,8 @@ export default function ProspekPage() {
                       <td data-label="ID" style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#94a3b8' }}>
                         {p.idProspek}
                       </td>
-                      <td data-label="Gapoktan" style={{ fontWeight: 700, color: '#0f172a' }}>
-                        {p.namaGapoktan}
+                      <td data-label="Nama Prospek" style={{ fontWeight: 700, color: '#0f172a' }}>
+                        {p.namaProspek || p.namaGapoktan}
                       </td>
                       <td data-label="Kecamatan">Kec. {p.kecamatan}</td>
                       <td data-label="Komoditas">
@@ -426,7 +434,10 @@ export default function ProspekPage() {
                           <span>{p.namaAnalis}</span>
                         </div>
                       </td>
-                      <td data-label="Estimasi Alsintan" style={{ fontSize: '0.8125rem' }}>{p.estimasiKebutuhan || '-'}</td>
+                      <td data-label="Kebutuhan Alat" style={{ fontSize: '0.8125rem' }}>{p.estimasiKebutuhan || '-'}</td>
+                      <td data-label="Estimasi Plafon" style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#16a34a' }}>
+                        {p.estimasiPlafon ? formatRupiah(p.estimasiPlafon) : '-'}
+                      </td>
                       <td data-label="Tanggal" style={{ fontSize: '0.8125rem', color: '#64748b' }}>{formatDate(p.tanggal)}</td>
                       <td data-label="Status">
                         <span className={`badge ${statusInfo.badge}`}>
@@ -474,7 +485,7 @@ export default function ProspekPage() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: 'center', padding: '40px 16px', color: '#94a3b8' }}>
+                  <td colSpan={10} style={{ textAlign: 'center', padding: '40px 16px', color: '#94a3b8' }}>
                     Belum ada data prospek yang sesuai filter
                   </td>
                 </tr>
@@ -535,16 +546,16 @@ export default function ProspekPage() {
                   {errors.idKecamatan && <p className="input-error">{errors.idKecamatan.message}</p>}
                 </div>
 
-                {/* Nama Gapoktan */}
+                {/* Nama Prospek */}
                 <div>
-                  <label className="input-label">Nama Gapoktan / Kelompok Tani</label>
+                  <label className="input-label">Nama Prospek (Perorangan)</label>
                   <input
                     type="text"
-                    placeholder="Contoh: Gapoktan Tani Makmur"
-                    className={`input ${errors.namaGapoktan ? 'error' : ''}`}
-                    {...register('namaGapoktan')}
+                    placeholder="Contoh: Bpk. Slamet Riyadi"
+                    className={`input ${errors.namaProspek ? 'error' : ''}`}
+                    {...register('namaProspek')}
                   />
-                  {errors.namaGapoktan && <p className="input-error">{errors.namaGapoktan.message}</p>}
+                  {errors.namaProspek && <p className="input-error">{errors.namaProspek.message}</p>}
                 </div>
 
                 {/* Komoditas */}
@@ -559,26 +570,27 @@ export default function ProspekPage() {
                   </select>
                 </div>
 
-                {/* Estimasi Alsintan */}
+                {/* Kebutuhan Alat */}
                 <div>
-                  <label className="input-label">Estimasi Kebutuhan Alsintan</label>
+                  <label className="input-label">Kebutuhan Alat / Alsintan</label>
                   <input
                     type="text"
-                    placeholder="Contoh: Combine Harvester 2 unit / Traktor Roda 4"
+                    placeholder="Contoh: Combine Harvester 1 unit / Traktor Roda 4"
                     className="input"
                     {...register('estimasiKebutuhan')}
                   />
                 </div>
 
-                {/* Catatan */}
+                {/* Estimasi Plafon */}
                 <div>
-                  <label className="input-label">Catatan Lapangan</label>
-                  <textarea
-                    rows={3}
-                    placeholder="Keterangan akses lahan, kontak ketua gapoktan, dll..."
-                    className="input"
-                    {...register('catatan')}
+                  <label className="input-label">Estimasi Plafon (Rp)</label>
+                  <input
+                    type="number"
+                    placeholder="Contoh: 450000000"
+                    className={`input ${errors.estimasiPlafon ? 'error' : ''}`}
+                    {...register('estimasiPlafon')}
                   />
+                  {errors.estimasiPlafon && <p className="input-error">{errors.estimasiPlafon.message}</p>}
                 </div>
               </div>
 
@@ -629,7 +641,7 @@ export default function ProspekPage() {
                   {selectedProspek.idProspek}
                 </span>
                 <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#0f172a' }}>
-                  {selectedProspek.namaGapoktan}
+                  {selectedProspek.namaProspek || selectedProspek.namaGapoktan}
                 </h3>
               </div>
               <button
@@ -659,8 +671,14 @@ export default function ProspekPage() {
                 <strong>{selectedProspek.namaAnalis}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>Kebutuhan Alsintan</span>
+                <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>Kebutuhan Alat</span>
                 <strong>{selectedProspek.estimasiKebutuhan || '-'}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
+                <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>Estimasi Plafon</span>
+                <strong style={{ color: '#16a34a' }}>
+                  {selectedProspek.estimasiPlafon ? formatRupiah(selectedProspek.estimasiPlafon) : '-'}
+                </strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
                 <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>Tanggal Registrasi</span>
@@ -759,13 +777,13 @@ export default function ProspekPage() {
                 </div>
 
                 <div>
-                  <label className="input-label">Nama Gapoktan / Kelompok Tani</label>
+                  <label className="input-label">Nama Prospek (Perorangan)</label>
                   <input
                     type="text"
-                    className={`input ${editErrors.namaGapoktan ? 'error' : ''}`}
-                    {...registerEdit('namaGapoktan')}
+                    className={`input ${editErrors.namaProspek ? 'error' : ''}`}
+                    {...registerEdit('namaProspek')}
                   />
-                  {editErrors.namaGapoktan && <p className="input-error">{editErrors.namaGapoktan.message}</p>}
+                  {editErrors.namaProspek && <p className="input-error">{editErrors.namaProspek.message}</p>}
                 </div>
 
                 <div>
@@ -810,7 +828,7 @@ export default function ProspekPage() {
                 </div>
 
                 <div>
-                  <label className="input-label">Estimasi Kebutuhan Alsintan</label>
+                  <label className="input-label">Kebutuhan Alat / Alsintan</label>
                   <input
                     type="text"
                     className="input"
@@ -819,8 +837,13 @@ export default function ProspekPage() {
                 </div>
 
                 <div>
-                  <label className="input-label">Catatan Lapangan</label>
-                  <textarea rows={3} className="input" {...registerEdit('catatan')} />
+                  <label className="input-label">Estimasi Plafon (Rp)</label>
+                  <input
+                    type="number"
+                    className={`input ${editErrors.estimasiPlafon ? 'error' : ''}`}
+                    {...registerEdit('estimasiPlafon')}
+                  />
+                  {editErrors.estimasiPlafon && <p className="input-error">{editErrors.estimasiPlafon.message}</p>}
                 </div>
               </div>
 
@@ -879,7 +902,7 @@ export default function ProspekPage() {
 
             <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ fontSize: '0.875rem', color: '#334155' }}>
-                <strong>{deleteTarget.namaGapoktan}</strong>{' '}
+                <strong>{deleteTarget.namaProspek || deleteTarget.namaGapoktan}</strong>{' '}
                 <span style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#94a3b8' }}>
                   ({deleteTarget.idProspek})
                 </span>{' '}

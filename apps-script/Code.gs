@@ -22,6 +22,7 @@ var SHEETS = {
   DESA: 'MASTER_DESA',
   PROSPEK: 'DATA_PROSPEK',
   SURVEY: 'DATA_SURVEY',
+  PENCAIRAN: 'REKAP_PENCAIRAN',
   ANALIS: 'MASTER_ANALIS',
   USERS: 'USERS',
 };
@@ -76,6 +77,8 @@ function handle(p) {
       case 'deleteProspek': data = apiDeleteProspek(p); break;
       case 'restoreProspek': data = apiRestoreProspek(p); break;
       case 'createSurvey': data = apiCreateSurvey(p); break;
+      case 'updateSurvey': data = apiUpdateSurvey(p); break;
+      case 'getRekapPencairan': data = apiGetRekapPencairan(p); break;
       case 'createAnalis': data = apiCreateAnalis(p); break;
       case 'updateAnalisStatus': data = apiUpdateAnalisStatus(p); break;
       case 'authCheck': data = apiAuthCheck(p); break;
@@ -162,6 +165,9 @@ var SHEET_ALIAS = {
 var HEADER_ALIAS = {
   ID_AO: 'ID_ANALIS',
   NAMA_AO: 'NAMA_ANALIS',
+  NAMA_GAPOKTAN: 'NAMA_PROSPEK',
+  PLAFON: 'ESTIMASI_PLAFON',
+  HARGA: 'ESTIMASI_HARGA',
 };
 
 function getSheet(name) {
@@ -275,31 +281,37 @@ function mapWilayah(r) {
 }
 
 function mapProspek(r) {
+  var nama = str(r['NAMA_PROSPEK']) || str(r['NAMA_GAPOKTAN']);
   return {
     idProspek: str(r['ID_PROSPEK']),
     idKecamatan: str(r['ID_KECAMATAN']),
     kecamatan: str(r['KECAMATAN']),
-    namaGapoktan: str(r['NAMA_GAPOKTAN']),
+    namaProspek: nama,
+    namaGapoktan: nama,
     komoditas: str(r['KOMODITAS']),
     idAnalis: str(r['ID_ANALIS']),
     namaAnalis: str(r['NAMA_ANALIS']),
     status: str(r['STATUS']),
     tanggal: dateStr(r['TANGGAL']),
     estimasiKebutuhan: str(r['ESTIMASI_ALSINTAN']),
+    estimasiPlafon: num(r['ESTIMASI_PLAFON']) || 0,
     catatan: str(r['CATATAN']),
   };
 }
 
 function mapSurvey(r) {
+  var nama = str(r['NAMA_PROSPEK']) || str(r['NAMA_GAPOKTAN']);
   return {
     idSurvey: str(r['ID_SURVEY']),
     idProspek: str(r['ID_PROSPEK']),
-    namaGapoktan: str(r['NAMA_GAPOKTAN']),
+    namaProspek: nama,
+    namaGapoktan: nama,
     namaKetua: str(r['NAMA_KETUA']),
     jumlahAnggota: num(r['JUMLAH_ANGGOTA']),
     luasSawah: num(r['LUAS_SAWAH_AKTUAL']),
     jenisAlsintan: str(r['JENIS_ALSINTAN']),
-    estimasiHarga: num(r['ESTIMASI_HARGA']),
+    estimasiHarga: num(r['ESTIMASI_HARGA']) || 0,
+    estimasiPlafon: num(r['ESTIMASI_HARGA']) || 0,
     latitude: num(r['LATITUDE']),
     longitude: num(r['LONGITUDE']),
     accuracy: num(r['ACCURACY_M']),
@@ -309,6 +321,22 @@ function mapSurvey(r) {
     timestamp: isoStr(r['TIMESTAMP']),
     status: str(r['STATUS']),
     fotoUrl: str(r['FOTO_URL']),
+  };
+}
+
+function mapRekapPencairan(r) {
+  return {
+    idPencairan: str(r['ID_PENCAIRAN']),
+    tanggalPencairan: dateStr(r['TANGGAL_PENCAIRAN']),
+    idProspek: str(r['ID_PROSPEK']),
+    idSurvey: str(r['ID_SURVEY']),
+    namaProspek: str(r['NAMA_PROSPEK']),
+    kecamatan: str(r['KECAMATAN']),
+    jenisAlsintan: str(r['JENIS_ALSINTAN']),
+    plafonPencairan: num(r['PLAFON_PENCAIRAN']) || 0,
+    idAnalis: str(r['ID_ANALIS']),
+    namaAnalis: str(r['NAMA_ANALIS']),
+    catatan: str(r['CATATAN']),
   };
 }
 
@@ -396,7 +424,8 @@ function apiGetProspek(p) {
   if (p.search) {
     var q = str(p.search).toLowerCase();
     data = data.filter(function (x) {
-      return x.namaGapoktan.toLowerCase().indexOf(q) >= 0 ||
+      var n = (x.namaProspek || x.namaGapoktan || '').toLowerCase();
+      return n.indexOf(q) >= 0 ||
         x.kecamatan.toLowerCase().indexOf(q) >= 0 ||
         x.komoditas.toLowerCase().indexOf(q) >= 0;
     });
@@ -416,6 +445,25 @@ function apiGetSurvey(p) {
   if (p.status) data = data.filter(function (x) { return x.status === str(p.status); });
   if (p.idAnalis) data = data.filter(function (x) { return x.idAnalis === str(p.idAnalis); });
   data.sort(function (a, b) { return a.idSurvey < b.idSurvey ? -1 : 1; });
+  return paginate(data, p);
+}
+
+function apiGetRekapPencairan(p) {
+  var data = readRows(SHEETS.PENCAIRAN).map(mapRekapPencairan);
+  if (p.idProspek) data = data.filter(function (x) { return x.idProspek === str(p.idProspek); });
+  if (p.kecamatan) {
+    var kc = str(p.kecamatan).toLowerCase();
+    data = data.filter(function (x) { return x.kecamatan.toLowerCase().indexOf(kc) >= 0; });
+  }
+  if (p.search) {
+    var q = str(p.search).toLowerCase();
+    data = data.filter(function (x) {
+      return (x.namaProspek || '').toLowerCase().indexOf(q) >= 0 ||
+        (x.kecamatan || '').toLowerCase().indexOf(q) >= 0 ||
+        (x.jenisAlsintan || '').toLowerCase().indexOf(q) >= 0;
+    });
+  }
+  data.sort(function (a, b) { return a.idPencairan < b.idPencairan ? 1 : -1; });
   return paginate(data, p);
 }
 
@@ -461,8 +509,9 @@ function apiAuthCheck(p) {
 
 // ----------------------------------------------------------- write actions
 function apiCreateProspek(p) {
-  if (!str(p.idKecamatan) || !str(p.namaGapoktan)) {
-    throw new Error('idKecamatan dan namaGapoktan wajib diisi');
+  var nama = str(p.namaProspek) || str(p.namaGapoktan);
+  if (!str(p.idKecamatan) || !nama) {
+    throw new Error('idKecamatan dan namaProspek wajib diisi');
   }
   var wil = apiGetWilayah({ idKecamatan: str(p.idKecamatan) });
   if (!wil) throw new Error('idKecamatan tidak dikenal: ' + str(p.idKecamatan));
@@ -476,13 +525,14 @@ function apiCreateProspek(p) {
     'ID_PROSPEK': nextId(SHEETS.PROSPEK, 'ID_PROSPEK', 'P'),
     'ID_KECAMATAN': wil.idKecamatan,
     'KECAMATAN': wil.kecamatan,
-    'NAMA_GAPOKTAN': str(p.namaGapoktan),
+    'NAMA_PROSPEK': nama,
     'KOMODITAS': str(p.komoditas) || 'Padi',
     'ID_ANALIS': analis.idAnalis,
     'NAMA_ANALIS': analis.namaAnalis,
     'STATUS': str(p.status) || 'BARU',
     'TANGGAL': str(p.tanggal) || Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'),
-    'ESTIMASI_ALSINTAN': str(p.estimasiKebutuhan),
+    'ESTIMASI_ALSINTAN': str(p.estimasiKebutuhan) || str(p.kebutuhanAlat),
+    'ESTIMASI_PLAFON': num(p.estimasiPlafon) || 0,
     'CATATAN': str(p.catatan),
   };
   appendRow(SHEETS.PROSPEK, Object.keys(obj), obj);
@@ -515,9 +565,12 @@ function apiUpdateProspek(p) {
   var target = findProspekRow(idProspek);
 
   var patch = {};
-  if (p.namaGapoktan !== undefined) patch['NAMA_GAPOKTAN'] = str(p.namaGapoktan);
+  if (p.namaProspek !== undefined) patch['NAMA_PROSPEK'] = str(p.namaProspek);
+  else if (p.namaGapoktan !== undefined) patch['NAMA_PROSPEK'] = str(p.namaGapoktan);
   if (p.komoditas !== undefined) patch['KOMODITAS'] = str(p.komoditas);
   if (p.estimasiKebutuhan !== undefined) patch['ESTIMASI_ALSINTAN'] = str(p.estimasiKebutuhan);
+  else if (p.kebutuhanAlat !== undefined) patch['ESTIMASI_ALSINTAN'] = str(p.kebutuhanAlat);
+  if (p.estimasiPlafon !== undefined) patch['ESTIMASI_PLAFON'] = num(p.estimasiPlafon);
   if (p.catatan !== undefined) patch['CATATAN'] = str(p.catatan);
 
   if (p.status !== undefined && str(p.status)) {
@@ -526,6 +579,21 @@ function apiUpdateProspek(p) {
       throw new Error('Status tidak dikenal: ' + p.status + '. Pilihan: ' + STATUS_PROSPEK.join(', '));
     }
     patch['STATUS'] = st;
+    if (st === 'DISBURSE' || st === 'CAIR') {
+      try {
+        catatRekapPencairan({
+          idProspek: idProspek,
+          idSurvey: '',
+          namaProspek: patch['NAMA_PROSPEK'] || str(target['NAMA_PROSPEK']) || str(target['NAMA_GAPOKTAN']),
+          kecamatan: str(target['KECAMATAN']),
+          jenisAlsintan: patch['ESTIMASI_ALSINTAN'] || str(target['ESTIMASI_ALSINTAN']),
+          plafonPencairan: patch['ESTIMASI_PLAFON'] !== undefined ? patch['ESTIMASI_PLAFON'] : (num(target['ESTIMASI_PLAFON']) || 0),
+          idAnalis: patch['ID_ANALIS'] || str(target['ID_ANALIS']),
+          namaAnalis: patch['NAMA_ANALIS'] || str(target['NAMA_ANALIS']),
+          catatan: 'Disburse dari pipeline prospek'
+        });
+      } catch (err) {}
+    }
   }
 
   if (p.idAnalis !== undefined && str(p.idAnalis)) {
@@ -615,41 +683,97 @@ function ensureProspekDariPoktan(pok, p) {
     'ID_PROSPEK': pok.idPoktan,
     'ID_KECAMATAN': wil ? wil.idKecamatan : '',
     'KECAMATAN': wil ? wil.kecamatan : str(pok.kecamatan).toUpperCase(),
-    'NAMA_GAPOKTAN': pok.namaPoktan,
+    'NAMA_PROSPEK': pok.namaPoktan,
     'KOMODITAS': 'Padi',
     'ID_ANALIS': idAnalis,
     'NAMA_ANALIS': analis ? analis.namaAnalis : str(p.namaAnalis) || 'Budi Santoso',
     'STATUS': 'BARU',
     'TANGGAL': str(p.tanggal) || Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'),
     'ESTIMASI_ALSINTAN': str(p.jenisAlsintan),
+    'ESTIMASI_PLAFON': num(p.estimasiHarga) || num(p.estimasiPlafon) || 0,
     'CATATAN': 'Master Poktan 2026 · ID Poktan ' + pok.idPoktan + (pok.desa ? ' · Desa ' + pok.desa : ''),
   };
   appendRow(SHEETS.PROSPEK, Object.keys(obj), obj);
   return mapProspek(obj);
 }
 
+function catatRekapPencairan(item) {
+  var sheet = getSheet(SHEETS.PENCAIRAN);
+  if (!sheet) return;
+  var existing = readRows(SHEETS.PENCAIRAN);
+  var sudahAda = existing.some(function (r) {
+    if (item.idSurvey && str(r['ID_SURVEY']) === item.idSurvey) return true;
+    if (item.idProspek && str(r['ID_PROSPEK']) === item.idProspek && !item.idSurvey) return true;
+    return false;
+  });
+  if (sudahAda) return;
+
+  var idPencairan = nextId(SHEETS.PENCAIRAN, 'ID_PENCAIRAN', 'CAIR');
+  var tgl = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd');
+  var headers = [
+    'ID_PENCAIRAN', 'TANGGAL_PENCAIRAN', 'ID_PROSPEK', 'ID_SURVEY',
+    'NAMA_PROSPEK', 'KECAMATAN', 'JENIS_ALSINTAN', 'PLAFON_PENCAIRAN',
+    'ID_ANALIS', 'NAMA_ANALIS', 'CATATAN'
+  ];
+  var obj = {
+    'ID_PENCAIRAN': idPencairan,
+    'TANGGAL_PENCAIRAN': tgl,
+    'ID_PROSPEK': str(item.idProspek),
+    'ID_SURVEY': str(item.idSurvey),
+    'NAMA_PROSPEK': str(item.namaProspek),
+    'KECAMATAN': str(item.kecamatan),
+    'JENIS_ALSINTAN': str(item.jenisAlsintan),
+    'PLAFON_PENCAIRAN': num(item.plafonPencairan) || 0,
+    'ID_ANALIS': str(item.idAnalis),
+    'NAMA_ANALIS': str(item.namaAnalis),
+    'CATATAN': str(item.catatan),
+  };
+  appendRow(SHEETS.PENCAIRAN, headers, obj);
+}
+
 function apiCreateSurvey(p) {
-  if (!str(p.idProspek)) throw new Error('idProspek wajib diisi');
-  var prosp = apiGetProspek({ idProspek: str(p.idProspek) });
-  if (!prosp) {
-    var pok = lookupPoktan(str(p.idProspek));
-    if (pok) prosp = ensureProspekDariPoktan(pok, p);
+  var idProspek = str(p.idProspek);
+  var prosp = null;
+  if (idProspek && idProspek !== 'BARU') {
+    prosp = apiGetProspek({ idProspek: idProspek });
+    if (!prosp) {
+      var pok = lookupPoktan(idProspek);
+      if (pok) prosp = ensureProspekDariPoktan(pok, p);
+    }
   }
-  if (!prosp) throw new Error('idProspek tidak dikenal: ' + str(p.idProspek));
+  if (!prosp) {
+    var namaProsp = str(p.namaProspek) || str(p.namaGapoktan);
+    if (!namaProsp) throw new Error('Nama prospek wajib diisi');
+    var statusAwal = str(p.status).toUpperCase() === 'DISBURSE' ? 'DISBURSE' : (str(p.status).toUpperCase() === 'ANALISA' ? 'POTENSIAL' : 'SURVEY');
+    prosp = apiCreateProspek({
+      kecamatan: str(p.kecamatan),
+      namaProspek: namaProsp,
+      estimasiKebutuhan: str(p.jenisAlsintan) || str(p.kebutuhanAlat),
+      estimasiPlafon: num(p.estimasiHarga) || num(p.estimasiPlafon) || 0,
+      idAnalis: str(p.idAnalis),
+      namaAnalis: str(p.namaAnalis),
+      status: statusAwal,
+    });
+  }
   var idSurvey = nextId(SHEETS.SURVEY, 'ID_SURVEY', 'S');
   var fotoUrl = '';
   if (str(p.fotoBase64) && str(p.fotoName)) {
     fotoUrl = saveFotoSurvey(str(p.fotoBase64), str(p.fotoName), idSurvey);
   }
+  var nama = str(p.namaProspek) || str(p.namaGapoktan) || prosp.namaProspek || prosp.namaGapoktan;
+  var statusSurvey = str(p.status).toUpperCase() || 'SURVEY';
+  var estPlafon = num(p.estimasiHarga) || num(p.estimasiPlafon) || prosp.estimasiPlafon || 0;
+  var jenisAls = str(p.jenisAlsintan) || str(p.kebutuhanAlat) || prosp.estimasiKebutuhan;
+
   var obj = {
     'ID_SURVEY': idSurvey,
     'ID_PROSPEK': prosp.idProspek,
-    'NAMA_GAPOKTAN': str(p.namaGapoktan) || prosp.namaGapoktan,
+    'NAMA_PROSPEK': nama,
     'NAMA_KETUA': str(p.namaKetua),
     'JUMLAH_ANGGOTA': num(p.jumlahAnggota),
     'LUAS_SAWAH_AKTUAL': num(p.luasSawah),
-    'JENIS_ALSINTAN': str(p.jenisAlsintan),
-    'ESTIMASI_HARGA': num(p.estimasiHarga),
+    'JENIS_ALSINTAN': jenisAls,
+    'ESTIMASI_HARGA': estPlafon,
     'LATITUDE': num(p.latitude),
     'LONGITUDE': num(p.longitude),
     'ACCURACY_M': num(p.accuracy),
@@ -657,11 +781,94 @@ function apiCreateSurvey(p) {
     'ID_ANALIS': str(p.idAnalis) || prosp.idAnalis,
     'NAMA_ANALIS': str(p.namaAnalis) || prosp.namaAnalis,
     'TIMESTAMP': str(p.timestamp) || new Date().toISOString(),
-    'STATUS': str(p.status) || 'SURVEY_SELESAI',
+    'STATUS': statusSurvey,
     'FOTO_URL': fotoUrl,
   };
   appendRow(SHEETS.SURVEY, Object.keys(obj), obj);
+
+  if (statusSurvey === 'DISBURSE') {
+    try {
+      apiUpdateProspek({ idProspek: prosp.idProspek, status: 'DISBURSE' });
+    } catch (e) {}
+    try {
+      catatRekapPencairan({
+        idProspek: prosp.idProspek,
+        idSurvey: idSurvey,
+        namaProspek: nama,
+        kecamatan: prosp.kecamatan,
+        jenisAlsintan: jenisAls,
+        plafonPencairan: estPlafon,
+        idAnalis: str(p.idAnalis) || prosp.idAnalis,
+        namaAnalis: str(p.namaAnalis) || prosp.namaAnalis,
+        catatan: str(p.catatan) || 'Disburse dari hasil survey lapangan'
+      });
+    } catch (e) {}
+  } else if (statusSurvey === 'ANALISA') {
+    try {
+      apiUpdateProspek({ idProspek: prosp.idProspek, status: 'POTENSIAL' });
+    } catch (e) {}
+  }
+
   return mapSurvey(obj);
+}
+
+function findSurveyRow(idSurvey) {
+  var rows = readRows(SHEETS.SURVEY);
+  var found = null;
+  rows.forEach(function (r) {
+    if (str(r['ID_SURVEY']) === idSurvey) found = r;
+  });
+  if (!found) throw new Error('Survey tidak ditemukan: ' + idSurvey);
+  return found;
+}
+
+function apiUpdateSurvey(p) {
+  var idSurvey = str(p.idSurvey);
+  if (!idSurvey) throw new Error('idSurvey wajib diisi');
+  var target = findSurveyRow(idSurvey);
+
+  var patch = {};
+  if (p.namaProspek !== undefined) patch['NAMA_PROSPEK'] = str(p.namaProspek);
+  if (p.jenisAlsintan !== undefined) patch['JENIS_ALSINTAN'] = str(p.jenisAlsintan);
+  if (p.estimasiHarga !== undefined) patch['ESTIMASI_HARGA'] = num(p.estimasiHarga);
+  if (p.catatan !== undefined) patch['CATATAN'] = str(p.catatan);
+
+  if (p.status !== undefined && str(p.status)) {
+    var st = str(p.status).toUpperCase();
+    patch['STATUS'] = st;
+    if (st === 'DISBURSE') {
+      var idProspek = str(target['ID_PROSPEK']);
+      if (idProspek) {
+        try {
+          apiUpdateProspek({ idProspek: idProspek, status: 'DISBURSE' });
+        } catch (e) {}
+      }
+      try {
+        var prosp = idProspek ? apiGetProspek({ idProspek: idProspek }) : null;
+        catatRekapPencairan({
+          idProspek: idProspek,
+          idSurvey: idSurvey,
+          namaProspek: patch['NAMA_PROSPEK'] || str(target['NAMA_PROSPEK']) || str(target['NAMA_GAPOKTAN']),
+          kecamatan: (prosp ? prosp.kecamatan : '') || str(target['KECAMATAN']),
+          jenisAlsintan: patch['JENIS_ALSINTAN'] || str(target['JENIS_ALSINTAN']),
+          plafonPencairan: patch['ESTIMASI_HARGA'] !== undefined ? patch['ESTIMASI_HARGA'] : num(target['ESTIMASI_HARGA']),
+          idAnalis: str(target['ID_ANALIS']),
+          namaAnalis: str(target['NAMA_ANALIS']),
+          catatan: patch['CATATAN'] || str(target['CATATAN']) || 'Disburse dari data survey'
+        });
+      } catch (e) {}
+    } else if (st === 'ANALISA') {
+      var idProspek2 = str(target['ID_PROSPEK']);
+      if (idProspek2) {
+        try {
+          apiUpdateProspek({ idProspek: idProspek2, status: 'POTENSIAL' });
+        } catch (e) {}
+      }
+    }
+  }
+
+  var updated = updateRowCells(SHEETS.SURVEY, target._row, patch);
+  return mapSurvey(updated);
 }
 
 // Simpan foto survey (base64) ke folder Drive khusus, return link

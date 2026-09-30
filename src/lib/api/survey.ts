@@ -4,7 +4,7 @@
 // Sumber data: sheet DATA_SURVEY di Google Spreadsheet (via Apps Script)
 // ============================================================
 
-import type { DataSurvey, SurveyFilter, PaginatedResponse } from '@/lib/types'
+import type { DataSurvey, SurveyFilter, PaginatedResponse, UpdateSurveyForm, RekapPencairan, StatusSurvey } from '@/lib/types'
 import { gasGet, gasPost } from './gas'
 
 export async function getSurvey(filter?: SurveyFilter): Promise<PaginatedResponse<DataSurvey>> {
@@ -24,13 +24,16 @@ export async function getSurveyById(idSurvey: string): Promise<DataSurvey | null
 
 // Payload survey — foto dikirim sebagai base64 (disimpan ke Drive oleh Apps Script)
 export interface CreateSurveyPayload {
-  idProspek: string
-  namaGapoktan: string
+  idProspek?: string
+  kecamatan?: string
+  namaProspek?: string
+  namaGapoktan?: string
   namaKetua?: string
   jumlahAnggota?: number
   luasSawah?: number
   jenisAlsintan?: string
   estimasiHarga?: number
+  estimasiPlafon?: number
   latitude?: number
   longitude?: number
   accuracy?: number
@@ -39,8 +42,27 @@ export interface CreateSurveyPayload {
   namaAnalis?: string
   fotoBase64?: string
   fotoName?: string
+  status?: StatusSurvey
 }
 
 export async function createSurvey(form: CreateSurveyPayload): Promise<DataSurvey> {
-  return gasPost<DataSurvey>('createSurvey', { ...form })
+  return gasPost<DataSurvey>('createSurvey', {
+    ...form,
+    namaGapoktan: form.namaGapoktan || form.namaProspek,
+    namaProspek: form.namaProspek || form.namaGapoktan,
+  })
+}
+
+export async function updateSurvey(form: UpdateSurveyForm): Promise<DataSurvey> {
+  return gasPost<DataSurvey>('updateSurvey', { ...form })
+}
+
+export async function getRekapPencairan(filter?: {
+  idProspek?: string
+  kecamatan?: string
+  search?: string
+  page?: number
+  limit?: number
+}): Promise<PaginatedResponse<RekapPencairan>> {
+  return gasGet<PaginatedResponse<RekapPencairan>>('getRekapPencairan', { ...filter })
 }

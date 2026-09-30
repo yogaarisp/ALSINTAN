@@ -479,7 +479,7 @@ export default function AnalisPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Gapoktan</th>
+                  <th>Nama Prospek</th>
                   <th>Kecamatan</th>
                   <th>Komoditas</th>
                   <th>Estimasi Alsintan</th>
@@ -502,7 +502,7 @@ export default function AnalisPage() {
                     const statusInfo = getStatusProspekInfo(p.status)
                     return (
                       <tr key={p.idProspek}>
-                        <td data-label="Gapoktan" style={{ fontWeight: 700, color: '#0f172a' }}>{p.namaGapoktan}</td>
+                        <td data-label="Nama Prospek" style={{ fontWeight: 700, color: '#0f172a' }}>{p.namaProspek || p.namaGapoktan}</td>
                         <td data-label="Kecamatan">Kec. {p.kecamatan}</td>
                         <td data-label="Komoditas">
                           <span className="badge" style={{ background: '#f0fdf4', color: '#16a34a', borderColor: '#bbf7d0' }}>

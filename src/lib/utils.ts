@@ -119,13 +119,16 @@ export function getStatusProspekInfo(status: StatusProspek) {
 // Status Survey display
 // ─────────────────────────────────────────
 export function getStatusSurveyInfo(status: StatusSurvey) {
-  const map = {
+  const map: Record<StatusSurvey, { label: string; badge: string }> = {
     BELUM_SURVEY: { label: 'Belum Survey', badge: 'bg-slate-100 text-slate-600 border-slate-200' },
     SURVEY_BERJALAN: { label: 'Berjalan', badge: 'bg-blue-100 text-blue-700 border-blue-200' },
     SURVEY_SELESAI: { label: 'Selesai', badge: 'bg-green-100 text-green-700 border-green-200' },
     DIVERIFIKASI: { label: 'Diverifikasi', badge: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+    SURVEY: { label: 'Survey Lapangan', badge: 'bg-blue-100 text-blue-700 border-blue-200' },
+    ANALISA: { label: 'Analisa Kelayakan', badge: 'bg-purple-100 text-purple-700 border-purple-200' },
+    DISBURSE: { label: 'Disburse / Cair', badge: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
   }
-  return map[status]
+  return map[status] ?? { label: status, badge: 'bg-slate-100 text-slate-600 border-slate-200' }
 }
 
 // ─────────────────────────────────────────

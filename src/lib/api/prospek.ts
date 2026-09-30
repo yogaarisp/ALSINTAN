@@ -30,7 +30,7 @@ export async function getProspek(filter?: ProspekFilter): Promise<PaginatedRespo
     if (filter?.search) {
       const q = filter.search.toLowerCase()
       data = data.filter((p) =>
-        p.namaGapoktan.toLowerCase().includes(q) ||
+        (p.namaProspek || p.namaGapoktan).toLowerCase().includes(q) ||
         p.kecamatan.toLowerCase().includes(q) ||
         p.komoditas.toLowerCase().includes(q)
       )
@@ -84,10 +84,17 @@ export async function getProspekById(idProspek: string): Promise<DataProspek | n
 export async function createProspek(form: CreateProspekForm): Promise<DataProspek> {
   if (USE_MOCK) {
     await new Promise((r) => setTimeout(r, 800))
+    const nama = form.namaProspek || form.namaGapoktan || ''
     const newProspek: DataProspek = {
       idProspek: `P${Date.now()}`,
-      kecamatan: form.idKecamatan, // akan di-resolve dari master wilayah
-      ...form,
+      idKecamatan: form.idKecamatan,
+      kecamatan: form.idKecamatan,
+      namaProspek: nama,
+      namaGapoktan: nama,
+      komoditas: form.komoditas || 'Padi',
+      estimasiKebutuhan: form.estimasiKebutuhan,
+      estimasiPlafon: form.estimasiPlafon || 0,
+      catatan: form.catatan,
       idAnalis: form.idAnalis ?? 'AN001',
       namaAnalis: form.namaAnalis ?? 'Budi Santoso',
       status: 'BARU',
