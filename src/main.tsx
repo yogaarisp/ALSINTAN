@@ -24,6 +24,25 @@ const queryClient = new QueryClient({
 const rootEl = document.getElementById('root')
 if (!rootEl) throw new Error('Root element tidak ditemukan')
 
+// Auto-update Service Worker & reload otomatis saat ada deployment baru
+if ('serviceWorker' in navigator) {
+  // Cek update baru ke server saat browser dibuka atau tab di-focus
+  window.addEventListener('focus', () => {
+    navigator.serviceWorker.ready.then((reg) => {
+      reg.update().catch(() => {})
+    })
+  })
+
+  // Reload halaman saat Service Worker baru aktif mengambil alih kontrol
+  let refreshing = false
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true
+      window.location.reload()
+    }
+  })
+}
+
 createRoot(rootEl).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
