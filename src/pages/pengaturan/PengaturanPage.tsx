@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import {
   Server,
@@ -13,7 +14,6 @@ import {
   RefreshCw,
   CheckCircle2,
   XCircle,
-  AlertTriangle,
   Globe,
   Database,
 } from 'lucide-react'
@@ -23,13 +23,15 @@ import { PRIORITY_CONFIG } from '@/lib/config/priority-config'
 import { gasPost, isGasConfigured } from '@/lib/api/gas'
 import type { UserRole } from '@/lib/types'
 import {
-  getPriorityOverrides,
-  setPriorityOverrides,
-  resetPriorityOverrides,
   getGasUrlOverride,
   setGasUrlOverride,
   resetGasUrlOverride,
 } from '@/lib/settings/settings-store'
+import {
+  getPriorityConfigApi,
+  updatePriorityConfigApi,
+  resetPriorityConfigApi,
+} from '@/lib/api/priority'
 
 const WEIGHT_FIELDS: {
   key: 'luasLahan' | 'jumlahGapoktan' | 'produksi' | 'prospekExisting'
@@ -66,30 +68,55 @@ const ROLE_LABEL: Record<UserRole, string> = {
 export default function PengaturanPage() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'ADMIN'
+  const queryClient = useQueryClient()
 
-  const storedPriority = getPriorityOverrides()
+  // ─── Query Config Prioritas dari Backend / Cache ───
+  const { data: configData } = useQuery({
+    queryKey: ['priorityConfig'],
+    queryFn: getPriorityConfigApi,
+    staleTime: 1000 * 60 * 5, // 5 menit
+  })
 
   const [gasUrl, setGasUrl] = useState<string>(() => getGasUrlOverride() || API_CONFIG.gasApiUrl)
   const [testState, setTestState] = useState<TestState>('idle')
   const [testMsg, setTestMsg] = useState('')
 
   const [weights, setWeights] = useState<Record<WeightKey, number>>(() => ({
-    luasLahan: Math.round((storedPriority?.weights.luasLahan ?? PRIORITY_CONFIG.weights.luasLahan) * 100),
-    jumlahGapoktan: Math.round((storedPriority?.weights.jumlahGapoktan ?? PRIORITY_CONFIG.weights.jumlahGapoktan) * 100),
-    produksi: Math.round((storedPriority?.weights.produksi ?? PRIORITY_CONFIG.weights.produksi) * 100),
-    prospekExisting: Math.round((storedPriority?.weights.prospekExisting ?? PRIORITY_CONFIG.weights.prospekExisting) * 100),
-  }))
-  const [thresholds, setThresholds] = useState(() => ({
-    tinggi: storedPriority?.thresholds.tinggi ?? PRIORITY_CONFIG.thresholds.tinggi,
-    sedang: storedPriority?.thresholds.sedang ?? PRIORITY_CONFIG.thresholds.sedang,
+    luasLahan: Math.round(PRIORITY_CONFIG.weights.luasLahan * 100),
+    jumlahGapoktan: Math.round(PRIORITY_CONFIG.weights.jumlahGapoktan * 100),
+    produksi: Math.round(PRIORITY_CONFIG.weights.produksi * 100),
+    prospekExisting: Math.round(PRIORITY_CONFIG.weights.prospekExisting * 100),
   }))
 
-  const hasPriorityOverride = Boolean(storedPriority)
+  const [thresholds, setThresholds] = useState(() => ({
+    tinggi: PRIORITY_CONFIG.thresholds.tinggi,
+    sedang: PRIORITY_CONFIG.thresholds.sedang,
+  }))
+
+  // Sinkronkan state form dengan data konfigurasi yang termuat
+  useEffect(() => {
+    if (configData) {
+      setWeights({
+        luasLahan: Math.round(configData.weights.luasLahan * 100),
+        jumlahGapoktan: Math.round(configData.weights.jumlahGapoktan * 100),
+        produksi: Math.round(configData.weights.produksi * 100),
+        prospekExisting: Math.round(configData.weights.prospekExisting * 100),
+      })
+      setThresholds({
+        tinggi: configData.thresholds.tinggi,
+        sedang: configData.thresholds.sedang,
+      })
+    }
+  }, [configData])
+
   const urlConfigured = isGasConfigured()
   const weightTotal = weights.luasLahan + weights.jumlahGapoktan + weights.produksi + weights.prospekExisting
+  const isProd = import.meta.env.PROD
 
   const handleTestConnection = async () => {
-    setGasUrlOverride(gasUrl.trim())
+    if (!isProd) {
+      setGasUrlOverride(gasUrl.trim())
+    }
     setTestState('loading')
     setTestMsg('')
     try {
@@ -128,6 +155,34 @@ export default function PengaturanPage() {
     toast.success('URL kembali ke nilai bawaan dari .env.')
   }
 
+  const savePriorityMutation = useMutation({
+    mutationFn: (payload: {
+      weights: {
+        luasLahan: number
+        jumlahGapoktan: number
+        produksi: number
+        prospekExisting: number
+      }
+      thresholds: {
+        tinggi: number
+        sedang: number
+      }
+      updatedBy: string
+    }) => updatePriorityConfigApi(payload),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['priorityConfig'] })
+      queryClient.invalidateQueries({ queryKey: ['wilayah'] })
+      if (data.isBackend) {
+        toast.success('Konfigurasi berhasil disimpan dan disinkronkan ke Spreadsheet!')
+      } else {
+        toast.success('Konfigurasi prioritas disimpan ke sesi lokal.')
+      }
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || 'Gagal menyimpan konfigurasi.')
+    },
+  })
+
   const handleSavePriority = () => {
     const w: Record<WeightKey, number> = {
       luasLahan: weights.luasLahan / 100,
@@ -144,22 +199,28 @@ export default function PengaturanPage() {
       toast.error('Threshold tidak valid — nilai TINGGI harus lebih besar dari SEDANG.')
       return
     }
-    setPriorityOverrides({
+
+    savePriorityMutation.mutate({
       weights: w,
       thresholds: { tinggi: thresholds.tinggi, sedang: thresholds.sedang },
+      updatedBy: user?.nama || user?.email || 'ADMIN',
     })
-    toast.success('Konfigurasi Priority Engine disimpan dan langsung berlaku.')
   }
 
-  const handleResetPriority = () => {
-    resetPriorityOverrides()
+  const handleResetPriority = async () => {
+    await resetPriorityConfigApi()
     setWeights({
       luasLahan: Math.round(PRIORITY_CONFIG.weights.luasLahan * 100),
       jumlahGapoktan: Math.round(PRIORITY_CONFIG.weights.jumlahGapoktan * 100),
       produksi: Math.round(PRIORITY_CONFIG.weights.produksi * 100),
       prospekExisting: Math.round(PRIORITY_CONFIG.weights.prospekExisting * 100),
     })
-    setThresholds({ tinggi: PRIORITY_CONFIG.thresholds.tinggi, sedang: PRIORITY_CONFIG.thresholds.sedang })
+    setThresholds({
+      tinggi: PRIORITY_CONFIG.thresholds.tinggi,
+      sedang: PRIORITY_CONFIG.thresholds.sedang,
+    })
+    queryClient.invalidateQueries({ queryKey: ['priorityConfig'] })
+    queryClient.invalidateQueries({ queryKey: ['wilayah'] })
     toast.success('Bobot & threshold kembali ke nilai bawaan.')
   }
 
@@ -192,15 +253,6 @@ export default function PengaturanPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div className="dev-banner">
-        <AlertTriangle size={16} />
-        <div>
-          <strong>Mode Development:</strong> Perubahan di sini tersimpan di browser ini
-          (localStorage) dan langsung berlaku untuk sesi Anda. Untuk produksi, sebaiknya
-          dipindah ke penyimpanan backend.
-        </div>
-      </div>
-
       <div className="page-header" style={{ marginBottom: 0 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -224,184 +276,75 @@ export default function PengaturanPage() {
             </span>
           </div>
           <p className="page-subtitle" style={{ marginTop: 4 }}>
-            Kelola integrasi API, algoritma prioritas, dan informasi sistem.
+            Kelola integrasi API, algoritma prioritas, dan parameter sistem.
           </p>
         </div>
       </div>
 
-      {/* ─── Integrasi API ─── */}
+      {/* ─── Priority Engine (Tersimpan ke Backend / Spreadsheet) ─── */}
       <div className="card">
-        <div className="card-header" style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <Server strokeWidth={2} />
-          <strong>Integrasi & Koneksi API</strong>
+        <div
+          className="card-header"
+          style={{
+            display: 'flex',
+            gap: 10,
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+          }}
+        >
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <Scale strokeWidth={2} />
+            <strong>Konfigurasi Priority Engine</strong>
+          </div>
           <span
             style={{
-              fontSize: '0.7rem',
+              fontSize: '0.725rem',
               fontWeight: 600,
-              padding: '2px 8px',
+              padding: '3px 10px',
               borderRadius: 999,
-              background: urlConfigured ? '#ecfdf5' : '#fffbeb',
-              border: `1px solid ${urlConfigured ? '#a7f3d0' : '#fde68a'}`,
-              color: urlConfigured ? '#059669' : '#b45309',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              background: configData?.isBackend ? '#ecfdf5' : '#f8fafc',
+              border: `1px solid ${configData?.isBackend ? '#a7f3d0' : '#e2e8f0'}`,
+              color: configData?.isBackend ? '#059669' : '#64748b',
             }}
           >
-            {urlConfigured ? 'URL terpasang' : 'URL belum dikonfigurasi (.env)'}
-          </span>
-        </div>
-        <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <p style={{ fontSize: '0.8125rem', color: '#64748b', margin: 0 }}>
-            URL deployment Web App Google Apps Script digunakan semua API (prospek, survey, analis,
-            sumber data). Perubahan langsung berlaku tanpa perlu reload.
-          </p>
-
-          <div>
-            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#0f172a', marginBottom: 6, display: 'block' }}>
-              URL Google Apps Script
-            </label>
-            <input
-              className="input"
-              value={gasUrl}
-              onChange={(e) => {
-                setGasUrl(e.target.value)
-                setTestState('idle')
-                setTestMsg('')
-              }}
-              placeholder="https://script.google.com/macros/s/AKfycb.../exec"
-              style={{ width: '100%', fontFamily: 'monospace' }}
-            />
-          </div>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-              gap: 12,
-            }}
-          >
-            <div
-              style={{
-                padding: '12px 14px',
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: 10,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-              }}
-            >
-              <KeyRound size={16} color="#64748b" style={{ flexShrink: 0 }} />
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: '0.7rem', color: '#64748b' }}>API Key</div>
-                <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: API_CONFIG.gasApiKey ? '#0f172a' : '#b45309' }}>
-                  {API_CONFIG.gasApiKey ? '•••••••• (terpasang via env)' : 'Belum diatur (VITE_GAS_API_KEY)'}
-                </div>
-              </div>
-            </div>
-            <div
-              style={{
-                padding: '12px 14px',
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: 10,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-              }}
-            >
-              <Globe size={16} color="#64748b" style={{ flexShrink: 0 }} />
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: '0.7rem', color: '#64748b' }}>Timeout / Retry</div>
-                <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0f172a' }}>
-                  {Math.round(API_CONFIG.timeout / 1000)} detik · {API_CONFIG.retryAttempts}x retry
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            <button className="btn btn-primary btn-sm" onClick={handleSaveGasUrl}>
-              <Save size={14} />
-              Simpan URL
-            </button>
-            <button
-              className="btn btn-secondary btn-sm"
-              onClick={handleTestConnection}
-              disabled={testState === 'loading'}
-            >
-              {testState === 'loading' ? (
-                <RefreshCw size={14} className="animate-spin" />
-              ) : (
-                <Database size={14} />
-              )}
-              Test Koneksi
-            </button>
-            <button className="btn btn-ghost btn-sm" onClick={handleResetGasUrl}>
-              <RotateCcw size={14} />
-              Reset ke Bawaan
-            </button>
-          </div>
-
-          {testState === 'loading' && (
-            <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>Menghubungi Apps Script...</p>
-          )}
-          {testState === 'ok' && (
-            <p
-              style={{
-                fontSize: '0.8125rem',
-                color: '#059669',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                margin: 0,
-              }}
-            >
-              <CheckCircle2 size={15} />
-              {testMsg}
-            </p>
-          )}
-          {testState === 'error' && (
-            <p
-              style={{
-                fontSize: '0.8125rem',
-                color: '#dc2626',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                margin: 0,
-              }}
-            >
-              <XCircle size={15} />
-              {testMsg}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* ─── Priority Engine ─── */}
-      <div className="card">
-        <div className="card-header" style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <Scale strokeWidth={2} />
-          <strong>Konfigurasi Priority Engine</strong>
-          <span
-            style={{
-              fontSize: '0.7rem',
-              fontWeight: 600,
-              padding: '2px 8px',
-              borderRadius: 999,
-              background: hasPriorityOverride ? '#ecfdf5' : '#fffbeb',
-              border: `1px solid ${hasPriorityOverride ? '#a7f3d0' : '#fde68a'}`,
-              color: hasPriorityOverride ? '#059669' : '#b45309',
-            }}
-          >
-            {hasPriorityOverride ? 'Override Administrator aktif' : `Nilai bawaan (dev v${PRIORITY_CONFIG.version})`}
+            {configData?.isBackend ? (
+              <>
+                <CheckCircle2 size={13} color="#059669" />
+                Tersinkronisasi ke Spreadsheet (Backend)
+              </>
+            ) : (
+              <>
+                <Database size={13} />
+                Penyimpanan Sesi / Standalone
+              </>
+            )}
           </span>
         </div>
         <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-          <p style={{ fontSize: '0.8125rem', color: '#64748b', margin: 0 }}>
-            🚧 Formula & bobot ini <strong>BELUM disepakati stakeholder</strong> (NC1) — nilai
-            bawaan hanya placeholder development. Sesuaikan bobot persentase sesuai kebijakan,
-            lalu simpan. Ranking di halaman <strong>Prioritas Wilayah</strong> langsung terhitung ulang.
-          </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+            <p style={{ fontSize: '0.8125rem', color: '#64748b', margin: 0, flex: 1, minWidth: 260 }}>
+              Bobot indikator dan batas kategori prioritas berlaku global untuk seluruh pengguna (Analis, Manajemen,
+              dan Peta Potensi). Perubahan akan otomatis menghitung ulang peringkat wilayah.
+            </p>
+            {configData?.lastUpdated && (
+              <span
+                style={{
+                  fontSize: '0.725rem',
+                  color: '#64748b',
+                  background: '#f1f5f9',
+                  padding: '4px 8px',
+                  borderRadius: 6,
+                }}
+              >
+                Terakhir disimpan: <strong>{configData.lastUpdated}</strong>
+                {configData.updatedBy ? ` (${configData.updatedBy})` : ''}
+              </span>
+            )}
+          </div>
 
           <div>
             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0f172a', marginBottom: 10 }}>
@@ -507,11 +450,28 @@ export default function PengaturanPage() {
           </div>
 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button className="btn btn-primary btn-sm" onClick={handleSavePriority}>
-              <Save size={14} />
-              Simpan & Terapkan
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={handleSavePriority}
+              disabled={savePriorityMutation.isPending}
+            >
+              {savePriorityMutation.isPending ? (
+                <>
+                  <RefreshCw size={14} className="animate-spin" />
+                  Menyimpan ke Backend...
+                </>
+              ) : (
+                <>
+                  <Save size={14} />
+                  Simpan & Terapkan Global
+                </>
+              )}
             </button>
-            <button className="btn btn-ghost btn-sm" onClick={handleResetPriority}>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={handleResetPriority}
+              disabled={savePriorityMutation.isPending}
+            >
               <RotateCcw size={14} />
               Reset ke Bawaan
             </button>
@@ -519,7 +479,182 @@ export default function PengaturanPage() {
         </div>
       </div>
 
-      {/* ─── Infomasi Sistem ─── */}
+      {/* ─── Integrasi API ─── */}
+      <div className="card">
+        <div className="card-header" style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Server strokeWidth={2} />
+          <strong>Integrasi & Koneksi API</strong>
+          <span
+            style={{
+              fontSize: '0.7rem',
+              fontWeight: 600,
+              padding: '2px 8px',
+              borderRadius: 999,
+              background: urlConfigured ? '#ecfdf5' : '#fffbeb',
+              border: `1px solid ${urlConfigured ? '#a7f3d0' : '#fde68a'}`,
+              color: urlConfigured ? '#059669' : '#b45309',
+            }}
+          >
+            {urlConfigured ? 'URL terpasang' : 'URL belum dikonfigurasi (.env)'}
+          </span>
+        </div>
+        <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <p style={{ fontSize: '0.8125rem', color: '#64748b', margin: 0 }}>
+            URL deployment Web App Google Apps Script digunakan oleh semua modul API (prospek, survey, analis,
+            dan konfigurasi).
+          </p>
+
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#0f172a' }}>
+                URL Google Apps Script
+              </label>
+              {isProd && (
+                <span
+                  style={{
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    color: '#059669',
+                    background: '#ecfdf5',
+                    border: '1px solid #a7f3d0',
+                    padding: '2px 6px',
+                    borderRadius: 4,
+                  }}
+                >
+                  Terkunci di Environment Production (.env)
+                </span>
+              )}
+            </div>
+            <input
+              className="input"
+              value={gasUrl}
+              disabled={isProd}
+              onChange={(e) => {
+                setGasUrl(e.target.value)
+                setTestState('idle')
+                setTestMsg('')
+              }}
+              placeholder="https://script.google.com/macros/s/AKfycb.../exec"
+              style={{
+                width: '100%',
+                fontFamily: 'monospace',
+                backgroundColor: isProd ? '#f8fafc' : undefined,
+                cursor: isProd ? 'not-allowed' : undefined,
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: 12,
+            }}
+          >
+            <div
+              style={{
+                padding: '12px 14px',
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: 10,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+              }}
+            >
+              <KeyRound size={16} color="#64748b" style={{ flexShrink: 0 }} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: '0.7rem', color: '#64748b' }}>API Key</div>
+                <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: API_CONFIG.gasApiKey ? '#0f172a' : '#b45309' }}>
+                  {API_CONFIG.gasApiKey ? '•••••••• (terpasang via env)' : 'Belum diatur (VITE_GAS_API_KEY)'}
+                </div>
+              </div>
+            </div>
+            <div
+              style={{
+                padding: '12px 14px',
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: 10,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+              }}
+            >
+              <Globe size={16} color="#64748b" style={{ flexShrink: 0 }} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: '0.7rem', color: '#64748b' }}>Timeout / Retry</div>
+                <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0f172a' }}>
+                  {Math.round(API_CONFIG.timeout / 1000)} detik · {API_CONFIG.retryAttempts}x retry
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            {!isProd && (
+              <>
+                <button className="btn btn-primary btn-sm" onClick={handleSaveGasUrl}>
+                  <Save size={14} />
+                  Simpan URL
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={handleResetGasUrl}>
+                  <RotateCcw size={14} />
+                  Reset ke Bawaan
+                </button>
+              </>
+            )}
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={handleTestConnection}
+              disabled={testState === 'loading'}
+            >
+              {testState === 'loading' ? (
+                <RefreshCw size={14} className="animate-spin" />
+              ) : (
+                <Database size={14} />
+              )}
+              Test Koneksi
+            </button>
+          </div>
+
+          {testState === 'loading' && (
+            <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>Menghubungi Apps Script...</p>
+          )}
+          {testState === 'ok' && (
+            <p
+              style={{
+                fontSize: '0.8125rem',
+                color: '#059669',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                margin: 0,
+              }}
+            >
+              <CheckCircle2 size={15} />
+              {testMsg}
+            </p>
+          )}
+          {testState === 'error' && (
+            <p
+              style={{
+                fontSize: '0.8125rem',
+                color: '#dc2626',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                margin: 0,
+              }}
+            >
+              <XCircle size={15} />
+              {testMsg}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* ─── Informasi Sistem ─── */}
       <div className="card">
         <div className="card-header" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <Info strokeWidth={2} />

@@ -25,6 +25,7 @@ var SHEETS = {
   PENCAIRAN: 'REKAP_PENCAIRAN',
   ANALIS: 'MASTER_ANALIS',
   USERS: 'USERS',
+  CONFIG: 'CONFIG_PRIORITAS',
 };
 
 // Spreadsheet sumber lain di folder ALSINTAN — dibaca live oleh web (read-only)
@@ -82,6 +83,8 @@ function handle(p) {
       case 'createAnalis': data = apiCreateAnalis(p); break;
       case 'updateAnalisStatus': data = apiUpdateAnalisStatus(p); break;
       case 'authCheck': data = apiAuthCheck(p); break;
+      case 'getPriorityConfig': data = apiGetPriorityConfig(); break;
+      case 'updatePriorityConfig': data = apiUpdatePriorityConfig(p); break;
       // Alias lama (AO) — tetap dilayani agar tab browser lama tidak error saat deploy
       case 'getAO': data = apiGetAnalis(); break;
       case 'createAO': data = apiCreateAnalis(p); break;
@@ -1243,3 +1246,84 @@ function apiUpdateAnalisStatus(p) {
   header.forEach(function (h, i) { obj[h] = sheet.getRange(target._row, i + 1).getValue(); });
   return mapAnalis(obj);
 }
+
+// ----------------------------------------------------------- Config Prioritas
+function apiGetPriorityConfig() {
+  var sheet = getSheet(SHEETS.CONFIG);
+  if (!sheet) {
+    return {
+      weights: { luasLahan: 0.30, jumlahGapoktan: 0.25, produksi: 0.25, prospekExisting: 0.20 },
+      thresholds: { tinggi: 70, sedang: 40 },
+      lastUpdated: '',
+      updatedBy: 'DEFAULT',
+    };
+  }
+  var rows = readRows(SHEETS.CONFIG);
+  if (!rows || rows.length === 0) {
+    return {
+      weights: { luasLahan: 0.30, jumlahGapoktan: 0.25, produksi: 0.25, prospekExisting: 0.20 },
+      thresholds: { tinggi: 70, sedang: 40 },
+      lastUpdated: '',
+      updatedBy: 'DEFAULT',
+    };
+  }
+  var r = rows[0];
+  return {
+    weights: {
+      luasLahan: num(r['BOBOT_LUAS_LAHAN']) || 0.30,
+      jumlahGapoktan: num(r['BOBOT_GAPOKTAN']) || 0.25,
+      produksi: num(r['BOBOT_PRODUKSI']) || 0.25,
+      prospekExisting: num(r['BOBOT_PROSPEK']) || 0.20,
+    },
+    thresholds: {
+      tinggi: num(r['THRESHOLD_TINGGI']) || 70,
+      sedang: num(r['THRESHOLD_SEDANG']) || 40,
+    },
+    lastUpdated: str(r['UPDATED_AT']) || '',
+    updatedBy: str(r['UPDATED_BY']) || '',
+  };
+}
+
+function apiUpdatePriorityConfig(p) {
+  var sheet = getSheet(SHEETS.CONFIG);
+  var headers = [
+    'ID_CONFIG', 'BOBOT_LUAS_LAHAN', 'BOBOT_GAPOKTAN', 'BOBOT_PRODUKSI', 'BOBOT_PROSPEK',
+    'THRESHOLD_TINGGI', 'THRESHOLD_SEDANG', 'UPDATED_AT', 'UPDATED_BY'
+  ];
+  if (!sheet) {
+    sheet = ss().insertSheet(SHEETS.CONFIG);
+    sheet.appendRow(headers);
+  }
+  var rows = readRows(SHEETS.CONFIG);
+  var w = p && p.weights || {};
+  var t = p && p.thresholds || {};
+
+  var luasLahan = w.luasLahan !== undefined ? num(w.luasLahan) : 0.30;
+  var jumlahGapoktan = w.jumlahGapoktan !== undefined ? num(w.jumlahGapoktan) : 0.25;
+  var produksi = w.produksi !== undefined ? num(w.produksi) : 0.25;
+  var prospekExisting = w.prospekExisting !== undefined ? num(w.prospekExisting) : 0.20;
+  var tinggi = t.tinggi !== undefined ? num(t.tinggi) : 70;
+  var sedang = t.sedang !== undefined ? num(t.sedang) : 40;
+  var updatedBy = str(p && p.updatedBy || 'ADMIN');
+  var updatedAt = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss');
+
+  var patch = {
+    'BOBOT_LUAS_LAHAN': luasLahan,
+    'BOBOT_GAPOKTAN': jumlahGapoktan,
+    'BOBOT_PRODUKSI': produksi,
+    'BOBOT_PROSPEK': prospekExisting,
+    'THRESHOLD_TINGGI': tinggi,
+    'THRESHOLD_SEDANG': sedang,
+    'UPDATED_AT': updatedAt,
+    'UPDATED_BY': updatedBy,
+  };
+
+  if (rows && rows.length > 0) {
+    updateRowCells(SHEETS.CONFIG, rows[0]._row, patch);
+  } else {
+    patch['ID_CONFIG'] = 'CFG001';
+    appendRow(SHEETS.CONFIG, headers, patch);
+  }
+  return apiGetPriorityConfig();
+}
+

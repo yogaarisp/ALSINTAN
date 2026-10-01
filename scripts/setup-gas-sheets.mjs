@@ -111,6 +111,7 @@ const SCHEMAS = {
   DATA_SURVEY: ['ID_SURVEY', 'ID_PROSPEK', 'NAMA_PROSPEK', 'JUMLAH_ANGGOTA', 'LUAS_SAWAH_AKTUAL', 'JENIS_ALSINTAN', 'ESTIMASI_HARGA', 'LATITUDE', 'LONGITUDE', 'ACCURACY_M', 'CATATAN', 'ID_ANALIS', 'NAMA_ANALIS', 'TIMESTAMP', 'STATUS', 'FOTO_URL', 'NAMA_KETUA'],
   REKAP_PENCAIRAN: ['ID_PENCAIRAN', 'TANGGAL_PENCAIRAN', 'ID_PROSPEK', 'ID_SURVEY', 'NAMA_PROSPEK', 'KECAMATAN', 'JENIS_ALSINTAN', 'PLAFON_PENCAIRAN', 'ID_ANALIS', 'NAMA_ANALIS', 'CATATAN'],
   MASTER_ANALIS: ['ID_ANALIS', 'NAMA_ANALIS', 'WILAYAH', 'STATUS', 'EMAIL'],
+  CONFIG_PRIORITAS: ['ID_CONFIG', 'BOBOT_LUAS_LAHAN', 'BOBOT_GAPOKTAN', 'BOBOT_PRODUKSI', 'BOBOT_PROSPEK', 'THRESHOLD_TINGGI', 'THRESHOLD_SEDANG', 'UPDATED_AT', 'UPDATED_BY'],
 };
 
 const missing = Object.keys(SCHEMAS).filter((t) => !titles.includes(t));
@@ -153,6 +154,18 @@ if (analis.length === 0) {
   console.log('MASTER_ANALIS di-seed 1 baris (AN001)');
 } else {
   console.log(`MASTER_ANALIS berisi ${analis.length} baris`);
+}
+
+// 5. Seed CONFIG_PRIORITAS minimal (CFG001) jika kosong
+const configRows = (await request('GET', api('/values/CONFIG_PRIORITAS!A2:I10'), { headers: H })).json.values || [];
+if (configRows.length === 0) {
+  await request('PUT', api('/values/CONFIG_PRIORITAS!A2?valueInputOption=USER_ENTERED'), {
+    headers: H,
+    body: { values: [['CFG001', 0.30, 0.25, 0.25, 0.20, 70, 40, new Date().toISOString().replace('T', ' ').substring(0, 19), 'SYSTEM']] },
+  });
+  console.log('CONFIG_PRIORITAS di-seed 1 baris (CFG001)');
+} else {
+  console.log(`CONFIG_PRIORITAS berisi ${configRows.length} baris`);
 }
 
 // 5. Cek header MASTER_WILAYAH utk konfirmasi mapping Code.gs

@@ -23,6 +23,9 @@ export interface PriorityOverrides {
     tinggi: number
     sedang: number
   }
+  lastUpdated?: string
+  updatedBy?: string
+  isBackend?: boolean
 }
 
 function read<T>(key: string): T | undefined {

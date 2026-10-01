@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
@@ -34,6 +34,7 @@ import type {
 import {
   formatDate,
   formatRupiah,
+  formatNumber,
   getStatusProspekInfo,
 } from '@/lib/utils'
 
@@ -155,6 +156,7 @@ export default function ProspekPage() {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<CreateProspekForm>({
     resolver: zodResolver(prospekSchema),
@@ -198,6 +200,7 @@ export default function ProspekPage() {
     register: registerEdit,
     handleSubmit: handleSubmitEdit,
     reset: resetEdit,
+    control: controlEdit,
     formState: { errors: editErrors },
   } = useForm<EditProspekFormData>({
     resolver: zodResolver(editProspekSchema),
@@ -584,11 +587,22 @@ export default function ProspekPage() {
                 {/* Estimasi Plafon */}
                 <div>
                   <label className="input-label">Estimasi Plafon (Rp)</label>
-                  <input
-                    type="number"
-                    placeholder="Contoh: 450000000"
-                    className={`input ${errors.estimasiPlafon ? 'error' : ''}`}
-                    {...register('estimasiPlafon')}
+                  <Controller
+                    name="estimasiPlafon"
+                    control={control}
+                    render={({ field }) => (
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="Contoh: 45.000.000"
+                        className={`input ${errors.estimasiPlafon ? 'error' : ''}`}
+                        value={field.value ? formatNumber(field.value) : ''}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, '')
+                          field.onChange(digits ? Number(digits) : undefined)
+                        }}
+                      />
+                    )}
                   />
                   {errors.estimasiPlafon && <p className="input-error">{errors.estimasiPlafon.message}</p>}
                 </div>
@@ -838,10 +852,22 @@ export default function ProspekPage() {
 
                 <div>
                   <label className="input-label">Estimasi Plafon (Rp)</label>
-                  <input
-                    type="number"
-                    className={`input ${editErrors.estimasiPlafon ? 'error' : ''}`}
-                    {...registerEdit('estimasiPlafon')}
+                  <Controller
+                    name="estimasiPlafon"
+                    control={controlEdit}
+                    render={({ field }) => (
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="Contoh: 45.000.000"
+                        className={`input ${editErrors.estimasiPlafon ? 'error' : ''}`}
+                        value={field.value ? formatNumber(field.value) : ''}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, '')
+                          field.onChange(digits ? Number(digits) : undefined)
+                        }}
+                      />
+                    )}
                   />
                   {editErrors.estimasiPlafon && <p className="input-error">{editErrors.estimasiPlafon.message}</p>}
                 </div>

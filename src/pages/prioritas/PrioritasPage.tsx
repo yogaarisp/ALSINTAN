@@ -13,7 +13,8 @@ import {
 import { getWilayah } from '@/lib/api/wilayah'
 import { getProspek } from '@/lib/api/prospek'
 import { rankWilayah } from '@/lib/services/priority-engine'
-import { PRIORITY_CONFIG } from '@/lib/config/priority-config'
+import { getPriorityConfig } from '@/lib/config/priority-config'
+import { getPriorityConfigApi } from '@/lib/api/priority'
 import type { PriorityLevel, PriorityScoreResult } from '@/lib/types'
 import {
   formatHektar,
@@ -54,6 +55,13 @@ export default function PrioritasPage() {
     initialDataUpdatedAt: 0,
   })
 
+  const { data: priorityConfig } = useQuery({
+    queryKey: ['priorityConfig'],
+    queryFn: getPriorityConfigApi,
+    staleTime: 1000 * 60 * 5,
+  })
+
+  const currentConfig = priorityConfig || getPriorityConfig()
   const rankedResults = rankWilayah(wilayahList, prospekData?.items || [])
 
   // Join full wilayah details
@@ -102,11 +110,11 @@ export default function PrioritasPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* Dev only banner */}
+      {/* Formula info banner */}
       <div className="dev-banner">
         <Sparkles size={16} />
         <div>
-          <strong>Priority Analysis Engine [DEVELOPMENT ONLY]:</strong> Formula pembobotan (Luas Lahan {PRIORITY_CONFIG.weights.luasLahan * 100}%, Gapoktan {PRIORITY_CONFIG.weights.jumlahGapoktan * 100}%, Produksi {PRIORITY_CONFIG.weights.produksi * 100}%, Pipeline Prospek {PRIORITY_CONFIG.weights.prospekExisting * 100}%) adalah simulasi dan dapat disesuaikan kembali dengan kesepakatan stakeholder.
+          <strong>Priority Analysis Engine:</strong> Formula pembobotan aktif (Luas Lahan {Math.round(currentConfig.weights.luasLahan * 100)}%, Gapoktan {Math.round(currentConfig.weights.jumlahGapoktan * 100)}%, Produksi {Math.round(currentConfig.weights.produksi * 100)}%, Pipeline Prospek {Math.round(currentConfig.weights.prospekExisting * 100)}%). Ranking dihitung otomatis dari data wilayah & prospek.
         </div>
       </div>
 
