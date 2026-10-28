@@ -523,11 +523,10 @@ export default function ProspekPage() {
               {/* Mobile: tombol ← Kembali di kiri */}
               <button
                 onClick={() => setIsCreateOpen(false)}
-                className="btn btn-ghost btn-sm bs-header-back-mobile"
-                style={{ gap: 4, color: '#64748b', paddingLeft: 0 }}
+                className="btn btn-ghost btn-icon btn-sm bs-header-back-mobile"
+                style={{ color: '#64748b' }}
               >
-                <ArrowLeft size={16} />
-                Kembali
+                <ArrowLeft size={20} />
               </button>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <ClipboardList size={18} color="#16a34a" />
