@@ -97,15 +97,12 @@ export default function ProspekPage() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
 
-  // Lock body scroll saat modal create terbuka
+  // Lock body scroll saat modal apapun terbuka
   useEffect(() => {
-    if (isCreateOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
+    const anyOpen = isCreateOpen || !!selectedProspek || !!editingProspek
+    document.body.style.overflow = anyOpen ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
-  }, [isCreateOpen])
+  }, [isCreateOpen, selectedProspek, editingProspek])
 
   useEffect(() => {
     if (initialKecamatan) {
@@ -644,38 +641,39 @@ export default function ProspekPage() {
       {/* Modal Detail Prospek */}
       {selectedProspek && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-          }}
+          className="bottom-sheet-overlay"
           onClick={() => setSelectedProspek(null)}
         >
           <div
-            className="card animate-slide-up"
-            style={{ width: '100%', maxWidth: 480 }}
+            className="card bottom-sheet-panel animate-slide-from-bottom"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="card-header">
-              <div>
+              {/* Mobile: tombol ← di kiri */}
+              <button
+                onClick={() => setSelectedProspek(null)}
+                className="btn btn-ghost btn-icon btn-sm bs-header-back-mobile"
+                style={{ color: '#64748b' }}
+              >
+                <ArrowLeft size={20} />
+              </button>
+              {/* Title tengah */}
+              <div className="bs-header-title" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', textAlign: 'center' }}>
+                  {selectedProspek.namaProspek || selectedProspek.namaGapoktan}
+                </h3>
                 <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontFamily: 'monospace' }}>
                   {selectedProspek.idProspek}
                 </span>
-                <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#0f172a' }}>
-                  {selectedProspek.namaProspek || selectedProspek.namaGapoktan}
-                </h3>
               </div>
+              {/* Desktop: tombol X di kanan */}
               <button
                 onClick={() => setSelectedProspek(null)}
-                className="btn btn-ghost btn-icon btn-sm"
+                className="btn btn-ghost btn-icon btn-sm bs-header-close-desktop"
               >
                 ✕
               </button>
+              <span className="bs-header-spacer" />
             </div>
             <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
@@ -717,10 +715,10 @@ export default function ProspekPage() {
               )}
             </div>
             <div className="card-footer" style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-              <button onClick={() => setSelectedProspek(null)} className="btn btn-secondary btn-sm">
+              <button onClick={() => setSelectedProspek(null)} className="btn btn-secondary btn-sm bs-footer-cancel">
                 Tutup
               </button>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
                 {isDinonaktifkan(selectedProspek) ? (
                   <button
                     onClick={() => restoreMutation.mutate(selectedProspek)}
@@ -746,7 +744,7 @@ export default function ProspekPage() {
                 </button>
                 <a
                   href={`/survey?prospekId=${selectedProspek.idProspek}`}
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-primary btn-sm btn-submit-full"
                 >
                   Lakukan Survey Lapangan
                 </a>
@@ -759,41 +757,37 @@ export default function ProspekPage() {
       {/* Modal Ubah Prospek */}
       {editingProspek && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-          }}
+          className="bottom-sheet-overlay"
           onClick={() => setEditingProspek(null)}
         >
           <div
-            className="card animate-slide-up"
-            style={{ width: '100%', maxWidth: 500 }}
+            className="card bottom-sheet-panel animate-slide-from-bottom"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="card-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Pencil size={18} color="#16a34a" />
-                <div>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
-                    Ubah Prospek
-                  </h3>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontFamily: 'monospace' }}>
-                    {editingProspek.idProspek} · Kec. {editingProspek.kecamatan}
-                  </span>
-                </div>
-              </div>
+              {/* Mobile: tombol ← di kiri */}
               <button
                 onClick={() => setEditingProspek(null)}
-                className="btn btn-ghost btn-icon btn-sm"
+                className="btn btn-ghost btn-icon btn-sm bs-header-back-mobile"
+                style={{ color: '#64748b' }}
+              >
+                <ArrowLeft size={20} />
+              </button>
+              {/* Title tengah */}
+              <div className="bs-header-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <Pencil size={18} color="#16a34a" />
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
+                  Ubah Prospek
+                </h3>
+              </div>
+              {/* Desktop: tombol X di kanan */}
+              <button
+                onClick={() => setEditingProspek(null)}
+                className="btn btn-ghost btn-icon btn-sm bs-header-close-desktop"
               >
                 ✕
               </button>
+              <span className="bs-header-spacer" />
             </div>
 
             <form onSubmit={handleSubmitEdit((v) => updateMutation.mutate(v))}>
@@ -889,14 +883,14 @@ export default function ProspekPage() {
                 <button
                   type="button"
                   onClick={() => setEditingProspek(null)}
-                  className="btn btn-secondary btn-sm"
+                  className="btn btn-secondary btn-sm bs-footer-cancel"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={updateMutation.isPending}
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-primary btn-sm btn-submit-full"
                 >
                   {updateMutation.isPending ? 'Menyimpan...' : 'Simpan Perubahan'}
                 </button>
