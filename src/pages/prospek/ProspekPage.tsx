@@ -220,6 +220,7 @@ export default function ProspekPage() {
     const isAnalis = user?.role === 'ANALIS'
     createMutation.mutate({
       ...data,
+      namaGapoktan: data.namaProspek,
       ...(isAnalis ? { idAnalis: user!.id, namaAnalis: user!.nama } : {}),
     })
   }
@@ -261,6 +262,7 @@ export default function ProspekPage() {
       updateProspek({
         idProspek: editingProspek!.idProspek,
         namaProspek: form.namaProspek,
+        namaGapoktan: form.namaProspek,
         komoditas: form.komoditas,
         status: form.status as StatusProspek,
         // Hanya kirim idAnalis kalau benar-benar diganti. Kalau tidak, backend

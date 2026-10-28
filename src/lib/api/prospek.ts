@@ -82,9 +82,9 @@ export async function getProspekById(idProspek: string): Promise<DataProspek | n
 }
 
 export async function createProspek(form: CreateProspekForm): Promise<DataProspek> {
+  const nama = form.namaProspek || form.namaGapoktan || ''
   if (USE_MOCK) {
     await new Promise((r) => setTimeout(r, 800))
-    const nama = form.namaProspek || form.namaGapoktan || ''
     const newProspek: DataProspek = {
       idProspek: `P${Date.now()}`,
       idKecamatan: form.idKecamatan,
@@ -102,11 +102,16 @@ export async function createProspek(form: CreateProspekForm): Promise<DataProspe
     }
     return newProspek
   }
-  return gasPost<DataProspek>('createProspek', { ...form })
+  return gasPost<DataProspek>('createProspek', {
+    ...form,
+    namaProspek: nama,
+    namaGapoktan: nama, // Kompatibilitas dengan GAS deployment lama
+  })
 }
 
 /** Ubah isi prospek yang sudah ada. Kolom kunci tidak dikirim sama sekali. */
 export async function updateProspek(form: UpdateProspekForm): Promise<DataProspek> {
+  const nama = form.namaProspek || form.namaGapoktan
   if (USE_MOCK) {
     await new Promise((r) => setTimeout(r, 600))
     const list = [...MOCK_PROSPEK]
@@ -115,7 +120,10 @@ export async function updateProspek(form: UpdateProspekForm): Promise<DataProspe
     list[i] = { ...list[i], ...form }
     return list[i]
   }
-  return gasPost<DataProspek>('updateProspek', { ...form })
+  return gasPost<DataProspek>('updateProspek', {
+    ...form,
+    ...(nama ? { namaProspek: nama, namaGapoktan: nama } : {}),
+  })
 }
 
 /**

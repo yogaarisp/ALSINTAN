@@ -33,3 +33,7 @@ excel/
 # Memori/berkas kerja tool AI (bukan bagian dari aplikasi)
 .workbuddy-ai/
 .kilo/worktrees/
+
+# Google clasp
+.clasp.json
+apps-script/.clasp.json
