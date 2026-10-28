@@ -10,7 +10,7 @@ import { gasGet, gasPost, isGasConfigured } from './gas'
 
 import { getLocalCache, setLocalCache } from '@/lib/utils/cache'
 
-const USE_MOCK = !isGasConfigured
+const USE_MOCK = !isGasConfigured()
 
 export async function getAnalis(): Promise<MasterAnalis[]> {
   if (USE_MOCK) {

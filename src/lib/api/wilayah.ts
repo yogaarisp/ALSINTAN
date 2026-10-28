@@ -10,7 +10,7 @@ import { MOCK_WILAYAH } from '@/lib/mock/mock-data'
 import { getLocalCache, setLocalCache } from '@/lib/utils/cache'
 import { gasGet, isGasConfigured } from './gas'
 
-const USE_MOCK = !isGasConfigured
+const USE_MOCK = !isGasConfigured()
 
 export async function getWilayah(filter?: WilayahFilter): Promise<MasterWilayah[]> {
   if (USE_MOCK) {

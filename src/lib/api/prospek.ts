@@ -18,7 +18,7 @@ import { PAGINATION } from '@/lib/config/app-config'
 import { getLocalCache, setLocalCache } from '@/lib/utils/cache'
 import { gasGet, gasPost, isGasConfigured } from './gas'
 
-const USE_MOCK = !isGasConfigured
+const USE_MOCK = !isGasConfigured()
 
 export async function getProspek(filter?: ProspekFilter): Promise<PaginatedResponse<DataProspek>> {
   if (USE_MOCK) {
