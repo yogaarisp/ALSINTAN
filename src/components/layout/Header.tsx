@@ -26,6 +26,8 @@ import { getRoleInfo } from '@/lib/utils'
 interface HeaderProps {
   title: string
   onMenuClick: () => void
+  isCollapsed?: boolean
+  onToggleCollapse?: () => void
 }
 
 const PAGE_ICONS: Record<string, React.ElementType> = {
@@ -40,7 +42,7 @@ const PAGE_ICONS: Record<string, React.ElementType> = {
   '/pengaturan': Settings,
 }
 
-export function Header({ title, onMenuClick }: HeaderProps) {
+export function Header({ title, onMenuClick, isCollapsed = false, onToggleCollapse }: HeaderProps) {
   const { user, logout, loginWithUser } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
@@ -118,17 +120,27 @@ export function Header({ title, onMenuClick }: HeaderProps) {
       <div className="app-header-inner">
         {/* Left: Hamburger & Context / Breadcrumb */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-          {/* Mobile hamburger */}
+          {/* Menu / Toggle button */}
           <button
-            onClick={onMenuClick}
-            className="btn btn-ghost btn-icon hide-desktop"
+            onClick={() => {
+              if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+                onMenuClick()
+              } else if (onToggleCollapse) {
+                onToggleCollapse()
+              } else {
+                onMenuClick()
+              }
+            }}
+            className="btn btn-ghost btn-icon"
             style={{
               padding: 8,
               borderRadius: 8,
               color: '#334155',
               background: '#f1f5f9',
+              flexShrink: 0,
             }}
-            aria-label="Buka menu navigasi"
+            title={isCollapsed ? 'Perlebar sidebar' : 'Kecilkan sidebar'}
+            aria-label={isCollapsed ? 'Perlebar sidebar' : 'Kecilkan sidebar'}
           >
             <Menu size={20} />
           </button>

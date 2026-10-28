@@ -19,9 +19,25 @@ const PAGE_TITLES: Record<string, string> = {
 
 export function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('siap_sidebar_collapsed') === 'true'
+    }
+    return false
+  })
   const location = useLocation()
 
-  // Close sidebar automatically on navigation
+  const toggleSidebarCollapse = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('siap_sidebar_collapsed', String(next))
+      }
+      return next
+    })
+  }
+
+  // Close mobile sidebar automatically on navigation
   useEffect(() => {
     setSidebarOpen(false)
   }, [location.pathname])
@@ -46,13 +62,17 @@ export function DashboardLayout() {
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={toggleSidebarCollapse}
       />
 
       {/* Main content */}
-      <main className="app-main">
+      <main className={`app-main ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         <Header
           title={title}
           onMenuClick={() => setSidebarOpen(true)}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={toggleSidebarCollapse}
         />
 
         <div className="app-content">
