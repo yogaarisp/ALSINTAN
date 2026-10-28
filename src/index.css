@@ -994,6 +994,17 @@ html, body, #root, .app-layout {
 .bottom-sheet-panel .card-footer             { justify-content: stretch; }
 .bottom-sheet-panel .btn-submit-full         { width: 100%; justify-content: center; }
 
+/* 3-col grid: [back] [title center] [spacer] */
+.bottom-sheet-panel .card-header {
+  display: grid;
+  grid-template-columns: 36px 1fr 36px;
+  align-items: center;
+  gap: 4px;
+}
+.bottom-sheet-panel .card-header .bs-header-title {
+  text-align: center;
+}
+
 @media (min-width: 641px) {
   .bottom-sheet-overlay {
     align-items: center;
@@ -1009,9 +1020,18 @@ html, body, #root, .app-layout {
   }
   /* Desktop: tampilkan tombol X, sembunyikan tombol back, tampilkan Batal */
   .bottom-sheet-panel .bs-header-close-desktop { display: flex; }
-  .bottom-sheet-panel .bs-header-back-mobile   { display: none; }
+  .bottom-sheet-panel .bs-header-back-mobile   { display: none !important; }
   .bottom-sheet-panel .bs-footer-cancel        { display: inline-flex; }
   .bottom-sheet-panel .btn-submit-full         { width: auto; }
+  /* Kembalikan card-header ke flex biasa di desktop */
+  .bottom-sheet-panel .card-header {
+    display: flex;
+    grid-template-columns: unset;
+  }
+  .bottom-sheet-panel .card-header .bs-header-title {
+    text-align: left;
+    flex: 1;
+  }
 }
 
 /* Stagger delay utilities */

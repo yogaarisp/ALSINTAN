@@ -520,7 +520,7 @@ export default function ProspekPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="card-header">
-              {/* Mobile: tombol ← Kembali di kiri */}
+              {/* Mobile: tombol ← di kiri (kolom 1) */}
               <button
                 onClick={() => setIsCreateOpen(false)}
                 className="btn btn-ghost btn-icon btn-sm bs-header-back-mobile"
@@ -528,19 +528,21 @@ export default function ProspekPage() {
               >
                 <ArrowLeft size={20} />
               </button>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {/* Title tengah (kolom 2) */}
+              <div className="bs-header-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 <ClipboardList size={18} color="#16a34a" />
                 <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
                   Tambah Prospek Alsintan Baru
                 </h3>
               </div>
-              {/* Desktop: tombol X di kanan */}
+              {/* Desktop: tombol X di kanan (kolom 3) | Mobile: spacer */}
               <button
                 onClick={() => setIsCreateOpen(false)}
                 className="btn btn-ghost btn-icon btn-sm bs-header-close-desktop"
               >
                 ✕
               </button>
+              <span className="bs-header-back-mobile" style={{ display: 'none' }} />
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)}>
