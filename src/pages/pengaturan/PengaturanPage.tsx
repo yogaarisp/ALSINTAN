@@ -509,7 +509,7 @@ export default function PengaturanPage() {
               <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#0f172a' }}>
                 URL Google Apps Script
               </label>
-              {isProd && (
+              {getGasUrlOverride() && (
                 <span
                   style={{
                     fontSize: '0.7rem',
@@ -521,14 +521,13 @@ export default function PengaturanPage() {
                     borderRadius: 4,
                   }}
                 >
-                  Terkunci di Environment Production (.env)
+                  Override Aktif di Browser
                 </span>
               )}
             </div>
             <input
               className="input"
               value={gasUrl}
-              disabled={isProd}
               onChange={(e) => {
                 setGasUrl(e.target.value)
                 setTestState('idle')
@@ -538,8 +537,6 @@ export default function PengaturanPage() {
               style={{
                 width: '100%',
                 fontFamily: 'monospace',
-                backgroundColor: isProd ? '#f8fafc' : undefined,
-                cursor: isProd ? 'not-allowed' : undefined,
               }}
             />
           </div>
@@ -592,18 +589,14 @@ export default function PengaturanPage() {
           </div>
 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            {!isProd && (
-              <>
-                <button className="btn btn-primary btn-sm" onClick={handleSaveGasUrl}>
-                  <Save size={14} />
-                  Simpan URL
-                </button>
-                <button className="btn btn-ghost btn-sm" onClick={handleResetGasUrl}>
-                  <RotateCcw size={14} />
-                  Reset ke Bawaan
-                </button>
-              </>
-            )}
+            <button className="btn btn-primary btn-sm" onClick={handleSaveGasUrl}>
+              <Save size={14} />
+              Simpan URL
+            </button>
+            <button className="btn btn-ghost btn-sm" onClick={handleResetGasUrl}>
+              <RotateCcw size={14} />
+              Reset ke Bawaan
+            </button>
             <button
               className="btn btn-secondary btn-sm"
               onClick={handleTestConnection}
