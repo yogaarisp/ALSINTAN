@@ -17,6 +17,7 @@ import {
   Trash2,
   RotateCcw,
   AlertTriangle,
+  ArrowLeft,
 } from 'lucide-react'
 import { getProspek, createProspek, updateProspek, deleteProspek, restoreProspek } from '@/lib/api/prospek'
 import { getWilayah } from '@/lib/api/wilayah'
@@ -661,116 +662,119 @@ export default function ProspekPage() {
       {/* Modal Detail Prospek */}
       {selectedProspek && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-          }}
+          className="bottom-sheet-overlay"
           onClick={() => setSelectedProspek(null)}
         >
           <div
-            className="card animate-slide-up"
-            style={{ width: '100%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto' }}
+            className="card bottom-sheet-panel animate-slide-from-bottom"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="card-header">
-              <div>
+              <button
+                onClick={() => setSelectedProspek(null)}
+                className="btn btn-ghost btn-icon btn-sm bs-header-back-mobile"
+                style={{ color: '#64748b' }}
+              >
+                <ArrowLeft size={20} />
+              </button>
+              <div className="bs-header-title" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', textAlign: 'center' }}>
+                  {selectedProspek.namaProspek || selectedProspek.namaGapoktan}
+                </h3>
                 <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontFamily: 'monospace' }}>
                   {selectedProspek.idProspek}
                 </span>
-                <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#0f172a' }}>
-                  {selectedProspek.namaProspek || selectedProspek.namaGapoktan}
-                </h3>
               </div>
-              <button
-                onClick={() => setSelectedProspek(null)}
-                className="btn btn-ghost btn-icon btn-sm"
-              >
-                ✕
-              </button>
+              <span className="bs-header-spacer" />
             </div>
+
             <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>Status Prospek</span>
-                <span className={`badge ${getStatusProspekInfo(selectedProspek.status).badge}`}>
-                  {getStatusProspekInfo(selectedProspek.status).label}
-                </span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>Wilayah Kecamatan</span>
-                <strong style={{ color: '#0f172a' }}>Kec. {selectedProspek.kecamatan}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>Komoditas Utama</span>
-                <strong style={{ color: '#16a34a' }}>{selectedProspek.komoditas}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>Analis Penanggung Jawab</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <User size={14} color="#64748b" />
-                  <strong>{selectedProspek.namaAnalis ?? '-'}</strong>
+
+              <div>
+                <label className="input-label">Status Prospek</label>
+                <div style={{ marginTop: 4 }}>
+                  <span className={`badge ${getStatusProspekInfo(selectedProspek.status).badge}`}>
+                    {getStatusProspekInfo(selectedProspek.status).label}
+                  </span>
                 </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>Kebutuhan Alat / Alsintan</span>
-                <strong>{selectedProspek.estimasiKebutuhan || '-'}</strong>
+
+              <div>
+                <label className="input-label">Wilayah Kecamatan</label>
+                <input readOnly className="input" value={`Kec. ${selectedProspek.kecamatan}`} />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>Estimasi Plafon</span>
-                <strong style={{ color: '#16a34a' }}>
-                  {selectedProspek.estimasiPlafon ? formatRupiah(selectedProspek.estimasiPlafon) : '-'}
-                </strong>
+
+              <div>
+                <label className="input-label">Komoditas Utama</label>
+                <input readOnly className="input" value={selectedProspek.komoditas} />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>Tanggal Registrasi</span>
-                <span style={{ fontSize: '0.875rem', color: '#0f172a' }}>{formatDate(selectedProspek.tanggal)}</span>
+
+              <div>
+                <label className="input-label">Analis Penanggung Jawab</label>
+                <input readOnly className="input" value={selectedProspek.namaAnalis ?? '-'} />
               </div>
+
+              <div>
+                <label className="input-label">Kebutuhan Alat / Alsintan</label>
+                <input readOnly className="input" value={selectedProspek.estimasiKebutuhan || '-'} />
+              </div>
+
+              <div>
+                <label className="input-label">Estimasi Plafon (Rp)</label>
+                <input readOnly className="input" value={selectedProspek.estimasiPlafon ? formatRupiah(selectedProspek.estimasiPlafon) : '-'} />
+              </div>
+
+              <div>
+                <label className="input-label">Tanggal Registrasi</label>
+                <input readOnly className="input" value={formatDate(selectedProspek.tanggal)} />
+              </div>
+
               {selectedProspek.catatan && (
-                <div style={{ padding: 10, background: '#f8fafc', borderRadius: 8, fontSize: '0.8125rem', color: '#475569' }}>
-                  <strong>Catatan:</strong> {selectedProspek.catatan}
+                <div>
+                  <label className="input-label">Catatan</label>
+                  <textarea
+                    readOnly
+                    className="input"
+                    rows={3}
+                    style={{ resize: 'none' }}
+                    value={selectedProspek.catatan}
+                  />
                 </div>
               )}
+
             </div>
-            <div className="card-footer" style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-              <button onClick={() => setSelectedProspek(null)} className="btn btn-secondary btn-sm">
-                Tutup
-              </button>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {isDinonaktifkan(selectedProspek) ? (
-                  <button
-                    onClick={() => restoreMutation.mutate(selectedProspek)}
-                    disabled={restoreMutation.isPending}
-                    className="btn btn-secondary btn-sm"
-                  >
-                    <RotateCcw size={14} />
-                    Aktifkan Kembali
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => { setDeleteTarget(selectedProspek); setAlasanNonaktif('') }}
-                    className="btn btn-secondary btn-sm"
-                    style={{ color: '#dc2626' }}
-                  >
-                    <Trash2 size={14} />
-                    Nonaktifkan
-                  </button>
-                )}
-                <button onClick={() => openEdit(selectedProspek)} className="btn btn-secondary btn-sm">
-                  <Pencil size={14} />
-                  Ubah
-                </button>
-                <a
-                  href={`/survey?prospekId=${selectedProspek.idProspek}`}
-                  className="btn btn-primary btn-sm"
+
+            <div className="card-footer" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {isDinonaktifkan(selectedProspek) ? (
+                <button
+                  onClick={() => restoreMutation.mutate(selectedProspek)}
+                  disabled={restoreMutation.isPending}
+                  className="btn btn-secondary btn-sm"
+                  style={{ flex: 1 }}
                 >
-                  Lakukan Survey Lapangan
-                </a>
-              </div>
+                  <RotateCcw size={14} />
+                  Aktifkan Kembali
+                </button>
+              ) : (
+                <button
+                  onClick={() => { setDeleteTarget(selectedProspek); setAlasanNonaktif('') }}
+                  className="btn btn-secondary btn-sm"
+                  style={{ color: '#dc2626' }}
+                >
+                  <Trash2 size={14} />
+                  Nonaktifkan
+                </button>
+              )}
+              <button onClick={() => openEdit(selectedProspek)} className="btn btn-secondary btn-sm">
+                <Pencil size={14} />
+                Ubah
+              </button>
+              <a
+                href={`/survey?prospekId=${selectedProspek.idProspek}`}
+                className="btn btn-primary btn-sm btn-submit-full"
+              >
+                Lakukan Survey Lapangan
+              </a>
             </div>
           </div>
         </div>

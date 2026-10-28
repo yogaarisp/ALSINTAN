@@ -404,6 +404,16 @@ body {
   cursor: not-allowed;
 }
 
+.input[readonly] {
+  background: var(--color-neutral-50);
+  color: var(--color-neutral-700);
+  cursor: default;
+}
+.input[readonly]:focus {
+  border-color: var(--color-neutral-200);
+  box-shadow: none;
+}
+
 .input.error {
   border-color: var(--color-danger);
   box-shadow: 0 0 0 3px rgb(220 38 38 / 0.1);
