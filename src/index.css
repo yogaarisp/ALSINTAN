@@ -946,81 +946,9 @@ html, body, #root, .app-layout {
   50% { transform: scale(1.02); }
 }
 
-@keyframes slideInFromBottom {
-  from { transform: translateY(100%); }
-  to   { transform: translateY(0); }
-}
-
 .animate-fade-in { animation: fadeIn 0.3s ease forwards; }
 .animate-slide-up { animation: slideInUp 0.3s ease forwards; }
 .animate-slide-left { animation: slideInLeft 0.3s ease forwards; }
-.animate-slide-from-bottom { animation: slideInFromBottom 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
-
-/* Bottom sheet — mobile modal that slides up from the bottom edge */
-.bottom-sheet-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-  display: flex;
-  align-items: flex-end;          /* anchor sheet to bottom */
-  justify-content: center;
-  overscroll-behavior: none;      /* cegah scroll bocor ke halaman */
-  touch-action: none;             /* iOS: blokir scroll background via touch */
-}
-
-.bottom-sheet-panel {
-  width: 100%;
-  max-height: 92dvh;
-  overflow-y: auto;
-  border-radius: 20px 20px 0 0;
-  background: #fff;
-  /* drag-handle visual hint */
-  padding-top: 12px;
-  overscroll-behavior: contain;   /* scroll di dalam panel tidak bocor ke overlay */
-}
-
-.bottom-sheet-panel::before {
-  content: '';
-  display: block;
-  width: 40px;
-  height: 4px;
-  border-radius: 2px;
-  background: #cbd5e1;
-  margin: 0 auto 12px;
-}
-
-/* Mobile: tombol close jadi "← Kembali" di kiri, tombol Batal disembunyikan */
-.bottom-sheet-panel .bs-header-close-desktop { display: none; }
-.bottom-sheet-panel .bs-header-back-mobile   { display: flex; }
-.bottom-sheet-panel .bs-footer-cancel        { display: none; }
-.bottom-sheet-panel .card-footer             { justify-content: stretch; }
-.bottom-sheet-panel .btn-submit-full         { width: 100%; justify-content: center; }
-
-/* 3-col grid: [back] [title center] [spacer] */
-.bottom-sheet-panel .card-header {
-  display: grid;
-  grid-template-columns: 36px 1fr 36px;
-  align-items: center;
-  gap: 4px;
-}
-.bottom-sheet-panel .card-header .bs-header-title {
-  text-align: center;
-}
-/* Spacer kolom kanan hanya untuk grid mobile, di desktop hide */
-.bottom-sheet-panel .bs-header-spacer { display: block; }
-
-@media (min-width: 641px) {
-  .bottom-sheet-overlay {
-    align-items: center;
-  }
-  .bottom-sheet-panel {
-    max-width: 500px;
-    border-radius: 16px;
-    padding-top: 12px;
-    max-height: 90vh;
-  }
-}
 
 /* Stagger delay utilities */
 .delay-1 { animation-delay: 0.05s; }
