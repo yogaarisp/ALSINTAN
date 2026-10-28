@@ -987,6 +987,13 @@ html, body, #root, .app-layout {
   margin: 0 auto 12px;
 }
 
+/* Mobile: tombol close jadi "← Kembali" di kiri, tombol Batal disembunyikan */
+.bottom-sheet-panel .bs-header-close-desktop { display: none; }
+.bottom-sheet-panel .bs-header-back-mobile   { display: flex; }
+.bottom-sheet-panel .bs-footer-cancel        { display: none; }
+.bottom-sheet-panel .card-footer             { justify-content: stretch; }
+.bottom-sheet-panel .btn-submit-full         { width: 100%; justify-content: center; }
+
 @media (min-width: 641px) {
   .bottom-sheet-overlay {
     align-items: center;
@@ -1000,6 +1007,11 @@ html, body, #root, .app-layout {
   .bottom-sheet-panel::before {
     display: none;
   }
+  /* Desktop: tampilkan tombol X, sembunyikan tombol back, tampilkan Batal */
+  .bottom-sheet-panel .bs-header-close-desktop { display: flex; }
+  .bottom-sheet-panel .bs-header-back-mobile   { display: none; }
+  .bottom-sheet-panel .bs-footer-cancel        { display: inline-flex; }
+  .bottom-sheet-panel .btn-submit-full         { width: auto; }
 }
 
 /* Stagger delay utilities */

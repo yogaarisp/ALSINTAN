@@ -17,6 +17,7 @@ import {
   Trash2,
   RotateCcw,
   AlertTriangle,
+  ArrowLeft,
 } from 'lucide-react'
 import { getProspek, createProspek, updateProspek, deleteProspek, restoreProspek } from '@/lib/api/prospek'
 import { getWilayah } from '@/lib/api/wilayah'
@@ -95,6 +96,16 @@ export default function ProspekPage() {
 
   const { user } = useAuth()
   const queryClient = useQueryClient()
+
+  // Lock body scroll saat modal create terbuka
+  useEffect(() => {
+    if (isCreateOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [isCreateOpen])
 
   useEffect(() => {
     if (initialKecamatan) {
@@ -509,15 +520,25 @@ export default function ProspekPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="card-header">
+              {/* Mobile: tombol ← Kembali di kiri */}
+              <button
+                onClick={() => setIsCreateOpen(false)}
+                className="btn btn-ghost btn-sm bs-header-back-mobile"
+                style={{ gap: 4, color: '#64748b', paddingLeft: 0 }}
+              >
+                <ArrowLeft size={16} />
+                Kembali
+              </button>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <ClipboardList size={18} color="#16a34a" />
                 <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
                   Tambah Prospek Alsintan Baru
                 </h3>
               </div>
+              {/* Desktop: tombol X di kanan */}
               <button
                 onClick={() => setIsCreateOpen(false)}
-                className="btn btn-ghost btn-icon btn-sm"
+                className="btn btn-ghost btn-icon btn-sm bs-header-close-desktop"
               >
                 ✕
               </button>
@@ -602,14 +623,14 @@ export default function ProspekPage() {
                 <button
                   type="button"
                   onClick={() => setIsCreateOpen(false)}
-                  className="btn btn-secondary btn-sm"
+                  className="btn btn-secondary btn-sm bs-footer-cancel"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-primary btn-sm btn-submit-full"
                 >
                   {createMutation.isPending ? 'Menyimpan...' : 'Simpan Prospek'}
                 </button>
