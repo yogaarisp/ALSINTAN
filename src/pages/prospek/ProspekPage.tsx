@@ -530,42 +530,33 @@ export default function ProspekPage() {
       {/* Modal Tambah Prospek Baru */}
       {isCreateOpen && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-          }}
+          className="bottom-sheet-overlay"
           onClick={() => setIsCreateOpen(false)}
         >
           <div
-            className="card animate-slide-up"
-            style={{ width: '100%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto' }}
+            className="card bottom-sheet-panel animate-slide-from-bottom"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="card-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <ClipboardList size={18} color="#16a34a" />
-                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
-                  Tambah Prospek Alsintan Baru
-                </h3>
-              </div>
               <button
                 type="button"
                 onClick={() => setIsCreateOpen(false)}
-                className="btn btn-ghost btn-icon btn-sm"
+                className="btn btn-ghost btn-icon btn-sm bs-header-back-mobile"
+                style={{ color: '#64748b' }}
               >
-                ✕
+                <ArrowLeft size={20} />
               </button>
+              <div className="bs-header-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <ClipboardList size={18} color="#16a34a" />
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
+                  Tambah Prospek Baru
+                </h3>
+              </div>
+              <span className="bs-header-spacer" />
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)}>
               <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {/* Kecamatan */}
                 <div>
                   <label className="input-label">Wilayah Kecamatan</label>
                   <select className={`input ${errors.idKecamatan ? 'error' : ''}`} {...register('idKecamatan')}>
@@ -579,7 +570,6 @@ export default function ProspekPage() {
                   {errors.idKecamatan && <p className="input-error">{errors.idKecamatan.message}</p>}
                 </div>
 
-                {/* Nama Prospek */}
                 <div>
                   <label className="input-label">Nama Prospek (Perorangan)</label>
                   <input
@@ -591,7 +581,6 @@ export default function ProspekPage() {
                   {errors.namaProspek && <p className="input-error">{errors.namaProspek.message}</p>}
                 </div>
 
-                {/* Komoditas */}
                 <div>
                   <label className="input-label">Komoditas Utama</label>
                   <select className="input" {...register('komoditas')}>
@@ -603,7 +592,6 @@ export default function ProspekPage() {
                   </select>
                 </div>
 
-                {/* Kebutuhan Alat */}
                 <div>
                   <label className="input-label">Kebutuhan Alat / Alsintan</label>
                   <input
@@ -614,7 +602,6 @@ export default function ProspekPage() {
                   />
                 </div>
 
-                {/* Estimasi Plafon */}
                 <div>
                   <label className="input-label">Estimasi Plafon (Rp)</label>
                   <Controller
@@ -640,16 +627,9 @@ export default function ProspekPage() {
 
               <div className="card-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                 <button
-                  type="button"
-                  onClick={() => setIsCreateOpen(false)}
-                  className="btn btn-secondary btn-sm"
-                >
-                  Batal
-                </button>
-                <button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-primary btn-sm btn-submit-full"
                 >
                   {createMutation.isPending ? 'Menyimpan...' : 'Simpan Prospek'}
                 </button>
@@ -788,42 +768,29 @@ export default function ProspekPage() {
       {/* Modal Ubah Prospek */}
       {editingProspek && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-          }}
+          className="bottom-sheet-overlay"
           onClick={() => setEditingProspek(null)}
         >
           <div
-            className="card animate-slide-up"
-            style={{ width: '100%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto' }}
+            className="card bottom-sheet-panel animate-slide-from-bottom"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="card-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Pencil size={18} color="#16a34a" />
-                <div>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
-                    Ubah Prospek
-                  </h3>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontFamily: 'monospace' }}>
-                    {editingProspek.idProspek} · Kec. {editingProspek.kecamatan}
-                  </span>
-                </div>
-              </div>
               <button
                 type="button"
                 onClick={() => setEditingProspek(null)}
-                className="btn btn-ghost btn-icon btn-sm"
+                className="btn btn-ghost btn-icon btn-sm bs-header-back-mobile"
+                style={{ color: '#64748b' }}
               >
-                ✕
+                <ArrowLeft size={20} />
               </button>
+              <div className="bs-header-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <Pencil size={18} color="#16a34a" />
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
+                  Ubah Prospek
+                </h3>
+              </div>
+              <span className="bs-header-spacer" />
             </div>
 
             <form onSubmit={handleSubmitEdit((v) => updateMutation.mutate(v))}>
@@ -917,16 +884,9 @@ export default function ProspekPage() {
 
               <div className="card-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                 <button
-                  type="button"
-                  onClick={() => setEditingProspek(null)}
-                  className="btn btn-secondary btn-sm"
-                >
-                  Batal
-                </button>
-                <button
                   type="submit"
                   disabled={updateMutation.isPending}
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-primary btn-sm btn-submit-full"
                 >
                   {updateMutation.isPending ? 'Menyimpan...' : 'Simpan Perubahan'}
                 </button>
@@ -939,33 +899,28 @@ export default function ProspekPage() {
       {/* Modal Konfirmasi Nonaktifkan (soft delete) */}
       {deleteTarget && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-          }}
+          className="bottom-sheet-overlay"
           onClick={() => setDeleteTarget(null)}
         >
           <div
-            className="card animate-slide-up"
-            style={{ width: '100%', maxWidth: 440 }}
+            className="card bottom-sheet-panel animate-slide-from-bottom"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="card-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="btn btn-ghost btn-icon btn-sm bs-header-back-mobile"
+                style={{ color: '#64748b' }}
+              >
+                <ArrowLeft size={20} />
+              </button>
+              <div className="bs-header-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 <AlertTriangle size={18} color="#dc2626" />
                 <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
                   Nonaktifkan Prospek?
                 </h3>
               </div>
-              <button onClick={() => setDeleteTarget(null)} className="btn btn-ghost btn-icon btn-sm">
-                ✕
-              </button>
+              <span className="bs-header-spacer" />
             </div>
 
             <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -997,13 +952,10 @@ export default function ProspekPage() {
             </div>
 
             <div className="card-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setDeleteTarget(null)} className="btn btn-secondary btn-sm">
-                Batal
-              </button>
               <button
                 onClick={() => deleteMutation.mutate(deleteTarget)}
                 disabled={deleteMutation.isPending}
-                className="btn btn-primary btn-sm"
+                className="btn btn-primary btn-sm btn-submit-full"
                 style={{ background: '#dc2626', borderColor: '#dc2626' }}
               >
                 {deleteMutation.isPending ? 'Menyimpan...' : 'Ya, Nonaktifkan'}
