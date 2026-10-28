@@ -729,37 +729,39 @@ export default function ProspekPage() {
 
             </div>
 
-            <div className="card-footer" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {isDinonaktifkan(selectedProspek) ? (
-                <button
-                  onClick={() => restoreMutation.mutate(selectedProspek)}
-                  disabled={restoreMutation.isPending}
-                  className="btn btn-secondary btn-sm"
-                  style={{ flex: 1 }}
-                >
-                  <RotateCcw size={14} />
-                  Aktifkan Kembali
-                </button>
-              ) : (
-                <button
-                  onClick={() => { setDeleteTarget(selectedProspek); setAlasanNonaktif('') }}
-                  className="btn btn-secondary btn-sm"
-                  style={{ color: '#dc2626' }}
-                >
-                  <Trash2 size={14} />
-                  Nonaktifkan
-                </button>
-              )}
-              <button onClick={() => openEdit(selectedProspek)} className="btn btn-secondary btn-sm">
-                <Pencil size={14} />
-                Ubah
-              </button>
+            <div className="card-footer" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <a
                 href={`/survey?prospekId=${selectedProspek.idProspek}`}
                 className="btn btn-primary btn-sm btn-submit-full"
               >
                 Lakukan Survey Lapangan
               </a>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => openEdit(selectedProspek)} className="btn btn-secondary btn-sm" style={{ flex: 1 }}>
+                  <Pencil size={14} />
+                  Ubah
+                </button>
+                {isDinonaktifkan(selectedProspek) ? (
+                  <button
+                    onClick={() => restoreMutation.mutate(selectedProspek)}
+                    disabled={restoreMutation.isPending}
+                    className="btn btn-secondary btn-sm"
+                    style={{ flex: 1 }}
+                  >
+                    <RotateCcw size={14} />
+                    Aktifkan Kembali
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { setDeleteTarget(selectedProspek); setAlasanNonaktif('') }}
+                    className="btn btn-secondary btn-sm"
+                    style={{ flex: 1, color: '#dc2626' }}
+                  >
+                    <Trash2 size={14} />
+                    Nonaktifkan
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
