@@ -5,6 +5,14 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SIAP ALSINTAN — Sistem Informasi & Pemetaan Potensi Alsintan</title>
+    <script>
+      // Force unregister old service workers on version mismatch
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          regs.forEach(function(reg) { reg.update(); });
+        });
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
