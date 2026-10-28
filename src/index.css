@@ -808,7 +808,29 @@ html, body, #root, .app-layout {
   }
 
   .page-title { font-size: 1.25rem; }
+  .page-subtitle { font-size: 0.8125rem; }
   .kpi-card { padding: 14px; }
+
+  /* Page header: title kiri, tombol kanan satu baris */
+  .page-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .page-header-row .page-title  { font-size: 1rem; }
+  .page-header-row .page-subtitle { font-size: 0.75rem; margin-top: 2px; }
+  .page-header-row .btn-add-mobile {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .page-header-row .btn-add-mobile span { display: none; }
 }
 
 /* ─────────────────────────────────────────

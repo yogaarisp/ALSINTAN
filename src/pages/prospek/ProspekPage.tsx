@@ -311,7 +311,7 @@ export default function ProspekPage() {
 
       {/* Page Header */}
       <div className="page-header" style={{ marginBottom: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+        <div className="page-header-row">
           <div>
             <h1 className="page-title">Data Prospek Alsintan</h1>
             <p className="page-subtitle">
@@ -320,10 +320,10 @@ export default function ProspekPage() {
           </div>
           <button
             onClick={() => setIsCreateOpen(true)}
-            className="btn btn-primary"
+            className="btn btn-primary btn-add-mobile"
           >
-            <Plus size={16} />
-            Tambah Prospek Baru
+            <Plus size={18} />
+            <span>Tambah Prospek Baru</span>
           </button>
         </div>
       </div>
