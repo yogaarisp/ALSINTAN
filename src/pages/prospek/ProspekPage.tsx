@@ -542,7 +542,7 @@ export default function ProspekPage() {
               >
                 ✕
               </button>
-              <span className="bs-header-back-mobile" style={{ display: 'none' }} />
+              <span className="bs-header-spacer" />
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)}>
