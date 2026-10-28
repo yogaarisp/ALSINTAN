@@ -501,21 +501,11 @@ export default function ProspekPage() {
       {/* Modal Tambah Prospek Baru */}
       {isCreateOpen && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-          }}
+          className="bottom-sheet-overlay"
           onClick={() => setIsCreateOpen(false)}
         >
           <div
-            className="card animate-slide-up"
-            style={{ width: '100%', maxWidth: 500 }}
+            className="card bottom-sheet-panel animate-slide-from-bottom"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="card-header">
