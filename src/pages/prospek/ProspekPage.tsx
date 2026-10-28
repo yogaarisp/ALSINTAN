@@ -677,22 +677,27 @@ export default function ProspekPage() {
               >
                 <ArrowLeft size={20} />
               </button>
-              <div className="bs-header-title" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', textAlign: 'center' }}>
-                  {selectedProspek.namaProspek || selectedProspek.namaGapoktan}
+              <div className="bs-header-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <ClipboardList size={18} color="#16a34a" />
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
+                  Detail Prospek
                 </h3>
-                <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontFamily: 'monospace' }}>
-                  {selectedProspek.idProspek}
-                </span>
               </div>
               <span className="bs-header-spacer" />
             </div>
 
             <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
+              <div style={{ fontSize: '0.75rem', color: '#64748b', background: '#f8fafc', padding: '8px 10px', borderRadius: 8 }}>
+                {selectedProspek.namaProspek || selectedProspek.namaGapoktan}
+                <span style={{ fontFamily: 'monospace', color: '#94a3b8', marginLeft: 8 }}>
+                  {selectedProspek.idProspek}
+                </span>
+              </div>
+
               <div>
                 <label className="input-label">Status Prospek</label>
-                <div style={{ marginTop: 4 }}>
+                <div style={{ marginTop: 6 }}>
                   <span className={`badge ${getStatusProspekInfo(selectedProspek.status).badge}`}>
                     {getStatusProspekInfo(selectedProspek.status).label}
                   </span>
