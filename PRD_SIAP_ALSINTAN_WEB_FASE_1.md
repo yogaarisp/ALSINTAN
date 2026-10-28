@@ -477,6 +477,58 @@ Home | Peta | Prioritas | Prospek | Profil
 
 ------------------------------------------------------------------------
 
+## 15a. Keputusan Desain UI — Implementasi Aktual (Oktober 2026)
+
+Berdasarkan implementasi yang berjalan di https://alsintan-six.vercel.app/prospek,
+desain UI ke depan mengikuti pola berikut:
+
+### Modal / Form
+
+Semua form (Tambah, Edit, Detail) menggunakan pola **bottom sheet** yang konsisten:
+
+- **Mobile (≤640px):**
+  - Panel muncul dari bawah layar dengan animasi slide-up
+  - Sudut atas membulat (border-radius 20px)
+  - Drag-handle indicator abu di bagian atas panel
+  - Header: tombol `←` icon-only di kiri, judul + icon di tengah
+  - Body: tiap field pakai `label` di atas + `input` di bawah (stack, bukan row)
+  - Footer: tombol aksi utama **full-width**, tombol Batal/Tutup dihilangkan
+  - Background **tidak dapat di-scroll** saat panel terbuka (`position: fixed` body lock)
+
+- **Desktop (>640px):**
+  - Panel sama — muncul dari bawah dengan animasi slide-up, di tengah layar (max-width 500px)
+  - Layout header, body, dan footer **identik dengan mobile** (tidak ada perbedaan)
+  - Tidak ada tombol `✕`, tidak ada tombol `Batal` di footer
+
+### Form Detail (Read-only)
+
+Form Detail mengikuti struktur yang sama dengan form Edit, perbedaannya:
+- Input menggunakan atribut `readOnly` dengan background abu muda (`var(--color-neutral-50)`)
+- Baris info singkat (nama prospek + ID) ditampilkan sebagai info bar di atas fields
+- Status Prospek ditampilkan sebagai **badge**, bukan input
+
+### Page Header (Mobile)
+
+Di halaman daftar (misal: /prospek), header di mobile disederhanakan:
+- Title + subtitle di kiri
+- Tombol tambah berupa **icon `+` saja** (36×36px), tanpa label teks
+- Semua dalam satu baris horizontal
+
+### Warna & Tipografi
+
+- Warna primer: hijau `#16a34a`
+- Label field: `font-size: 0.8125rem`, `font-weight: 600`, `color: #374151`
+- Input: `font-size: 0.875rem`, border radius `var(--radius-md)`, border `1px solid var(--color-neutral-200)`
+- Tombol aksi utama: hijau solid, full-width di footer form
+- Tombol sekunder (Nonaktifkan, Ubah): outline/ghost style
+
+### Animasi
+
+- Modal masuk: `slideInFromBottom` — `cubic-bezier(0.32, 0.72, 0, 1)` 0.35s
+- Elemen lain: `fadeIn` 0.3s, `slideInUp` 0.3s
+
+------------------------------------------------------------------------
+
 ## 16. Security
 
 Website wajib: - HTTPS - Authentication - Role-based access - Input
