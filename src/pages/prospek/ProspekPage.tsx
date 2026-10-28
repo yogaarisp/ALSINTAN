@@ -98,10 +98,31 @@ export default function ProspekPage() {
   const queryClient = useQueryClient()
 
   // Lock body scroll saat modal apapun terbuka
+  // Teknik position:fixed diperlukan di iOS Safari — overflow:hidden saja tidak cukup
   useEffect(() => {
     const anyOpen = isCreateOpen || !!selectedProspek || !!editingProspek
-    document.body.style.overflow = anyOpen ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
+    if (anyOpen) {
+      const scrollY = window.scrollY
+      document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.width = '100%'
+    } else {
+      const top = document.body.style.top
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.width = ''
+      if (top) window.scrollTo(0, -parseInt(top))
+    }
+    return () => {
+      const top = document.body.style.top
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.width = ''
+      if (top) window.scrollTo(0, -parseInt(top))
+    }
   }, [isCreateOpen, selectedProspek, editingProspek])
 
   useEffect(() => {
