@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
@@ -9,6 +9,7 @@ import {
   Sparkles,
   Info,
   Sliders,
+  ArrowLeft,
 } from 'lucide-react'
 import { getWilayah } from '@/lib/api/wilayah'
 import { getProspek } from '@/lib/api/prospek'
@@ -33,6 +34,32 @@ export default function PrioritasPage() {
   const [sortField, setSortField] = useState<'score' | 'luas' | 'gapoktan' | 'produksi'>('score')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [selectedResult, setSelectedResult] = useState<PriorityScoreResult | null>(null)
+
+  // Lock body scroll saat modal detail terbuka (diperlukan untuk mobile/iOS agar background tidak ikut scroll)
+  useEffect(() => {
+    if (selectedResult) {
+      const scrollY = window.scrollY
+      document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.width = '100%'
+    } else {
+      const top = document.body.style.top
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.width = ''
+      if (top) window.scrollTo(0, -parseInt(top))
+    }
+    return () => {
+      const top = document.body.style.top
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.width = ''
+      if (top) window.scrollTo(0, -parseInt(top))
+    }
+  }, [selectedResult])
 
   const { data: wilayahList = [] } = useQuery({
     queryKey: ['wilayah'],
@@ -280,7 +307,7 @@ export default function PrioritasPage() {
                             className="btn btn-secondary btn-sm"
                             title="Detail Breakdown Skor"
                           >
-                            <Info size={14} />
+                            <Info size={14} /> Detail
                           </button>
                           <Link
                             to={`/prospek?kecamatan=${item.kecamatan}`}
@@ -308,36 +335,30 @@ export default function PrioritasPage() {
       {/* Modal Detail Breakdown Skor */}
       {selectedResult && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-          }}
+          className="bottom-sheet-overlay"
           onClick={() => setSelectedResult(null)}
         >
           <div
-            className="card animate-slide-up"
-            style={{ width: '100%', maxWidth: 480 }}
+            className="card bottom-sheet-panel animate-slide-from-bottom"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="card-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => setSelectedResult(null)}
+                className="btn btn-ghost btn-icon btn-sm bs-header-back-mobile"
+                style={{ color: '#64748b' }}
+                title="Kembali"
+              >
+                <ArrowLeft size={20} />
+              </button>
+              <div className="bs-header-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 <Sliders size={18} color="#16a34a" />
                 <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
                   Breakdown Skor: Kec. {selectedResult.kecamatan}
                 </h3>
               </div>
-              <button
-                onClick={() => setSelectedResult(null)}
-                className="btn btn-ghost btn-icon btn-sm"
-              >
-                ✕
-              </button>
+              <span className="bs-header-spacer" />
             </div>
             <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ textAlign: 'center', padding: '12px 0', background: '#f8fafc', borderRadius: 10 }}>
@@ -401,8 +422,20 @@ export default function PrioritasPage() {
                 * Catatan: Formula ini bertindak sebagai decision-support engine dan dapat dikonfigurasi melalui priority-config.ts
               </div>
             </div>
-            <div className="card-footer" style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button onClick={() => setSelectedResult(null)} className="btn btn-secondary btn-sm">
+            <div className="card-footer" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <Link
+                to={`/prospek?kecamatan=${selectedResult.kecamatan}`}
+                className="btn btn-primary btn-sm btn-submit-full"
+                style={{ justifyContent: 'center' }}
+              >
+                Lihat Prospek di Wilayah Ini
+              </Link>
+              <button
+                type="button"
+                onClick={() => setSelectedResult(null)}
+                className="btn btn-secondary btn-sm btn-submit-full"
+                style={{ justifyContent: 'center' }}
+              >
                 Tutup
               </button>
             </div>
