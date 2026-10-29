@@ -960,20 +960,20 @@ export default function SurveyPage() {
           {/* Survey List Table */}
           <div className="card">
             <div className="table-responsive">
-              <table className="data-table">
+              <table className="data-table" style={{ minWidth: 1100 }}>
                 <thead>
                   <tr>
-                    <th>Waktu</th>
-                    <th>Nama Prospek</th>
-                    <th>Kecamatan</th>
-                    <th>Kebutuhan Alat</th>
-                    <th>Estimasi Plafon</th>
-                    <th>Analis</th>
-                    <th>Koordinat GPS</th>
-                    <th>Foto</th>
-                    <th>Catatan</th>
-                    <th>Progres</th>
-                    <th style={{ textAlign: 'right' }}>Aksi</th>
+                    <th style={{ width: 140 }}>Waktu</th>
+                    <th style={{ minWidth: 150 }}>Nama Prospek</th>
+                    <th style={{ width: 120 }}>Kecamatan</th>
+                    <th style={{ width: 130 }}>Kebutuhan Alat</th>
+                    <th style={{ width: 130 }}>Estimasi Plafon</th>
+                    <th style={{ width: 120 }}>Analis</th>
+                    <th style={{ width: 120 }}>Koordinat GPS</th>
+                    <th style={{ width: 110 }}>Foto</th>
+                    <th style={{ minWidth: 130 }}>Catatan</th>
+                    <th style={{ width: 130 }}>Progres</th>
+                    <th style={{ width: 110, textAlign: 'right' }}>Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1003,15 +1003,15 @@ export default function SurveyPage() {
                           <td data-label="Nama Prospek" style={{ fontWeight: 700, color: '#0f172a' }}>
                             {s.namaProspek || s.namaGapoktan}
                           </td>
-                          <td data-label="Kecamatan">
+                          <td data-label="Kecamatan" style={{ whiteSpace: 'nowrap' }}>
                             {kec ? `Kec. ${kec}` : '-'}
                           </td>
                           <td data-label="Kebutuhan Alat">{s.jenisAlsintan || '-'}</td>
-                          <td data-label="Estimasi Plafon" style={{ fontWeight: 600, color: '#16a34a' }}>
+                          <td data-label="Estimasi Plafon" style={{ fontWeight: 600, color: '#16a34a', whiteSpace: 'nowrap' }}>
                             {s.estimasiHarga ? formatRupiah(s.estimasiHarga) : '-'}
                           </td>
-                          <td data-label="Analis" style={{ fontSize: '0.8125rem' }}>{s.namaAnalis || '-'}</td>
-                          <td data-label="Koordinat GPS">
+                          <td data-label="Analis" style={{ fontSize: '0.8125rem', whiteSpace: 'nowrap' }}>{s.namaAnalis || '-'}</td>
+                          <td data-label="Koordinat GPS" style={{ whiteSpace: 'nowrap' }}>
                             {s.latitude ? (
                               <a
                                 href={`https://www.google.com/maps?q=${s.latitude},${s.longitude}`}
@@ -1032,8 +1032,9 @@ export default function SurveyPage() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="badge"
-                                style={{ background: '#ecfdf5', color: '#047857', borderColor: '#a7f3d0' }}
+                                style={{ background: '#ecfdf5', color: '#047857', borderColor: '#a7f3d0', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                               >
+                                <Camera size={12} />
                                 Lihat Foto
                               </a>
                             ) : (
@@ -1044,12 +1045,12 @@ export default function SurveyPage() {
                             {s.catatan || '-'}
                           </td>
                           <td data-label="Progres">
-                            <span className={`badge ${statusInfo.badge}`}>
+                            <span className={`badge ${statusInfo.badge}`} style={{ whiteSpace: 'nowrap' }}>
                               {statusInfo.label}
                             </span>
                           </td>
                           <td data-label="Aksi" style={{ textAlign: 'right' }}>
-                            <div style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                            <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
                               <button
                                 type="button"
                                 onClick={() => setSelectedSurvey(s)}
@@ -1141,18 +1142,18 @@ export default function SurveyPage() {
           {/* Rekap Pencairan Table */}
           <div className="card">
             <div className="table-responsive">
-              <table className="data-table">
+              <table className="data-table" style={{ minWidth: 1000 }}>
                 <thead>
                   <tr>
-                    <th>ID Cair</th>
-                    <th>Tanggal</th>
-                    <th>Nama Prospek</th>
-                    <th>Kecamatan</th>
-                    <th>Jenis Alsintan</th>
-                    <th>Plafon Pencairan</th>
-                    <th>Analis</th>
-                    <th>Catatan</th>
-                    <th>Status</th>
+                    <th style={{ width: 110 }}>ID Cair</th>
+                    <th style={{ width: 110 }}>Tanggal</th>
+                    <th style={{ minWidth: 150 }}>Nama Prospek</th>
+                    <th style={{ width: 120 }}>Kecamatan</th>
+                    <th style={{ width: 130 }}>Jenis Alsintan</th>
+                    <th style={{ width: 140 }}>Plafon Pencairan</th>
+                    <th style={{ width: 120 }}>Analis</th>
+                    <th style={{ minWidth: 130 }}>Catatan</th>
+                    <th style={{ width: 140 }}>Status</th>
                   </tr>
                 </thead>
                 <tbody>

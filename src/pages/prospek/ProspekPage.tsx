@@ -421,7 +421,7 @@ export default function ProspekPage() {
       {/* Prospek List Table */}
       <div className="card">
         <div className="table-responsive">
-          <table className="data-table">
+          <table className="data-table" style={{ minWidth: 1000 }}>
             <thead>
               <tr>
                 <th>ID</th>
@@ -479,7 +479,7 @@ export default function ProspekPage() {
                         </span>
                       </td>
                       <td data-label="Aksi" style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                        <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
                           <button
                             onClick={() => setSelectedProspek(p)}
                             className="btn btn-secondary btn-sm"
