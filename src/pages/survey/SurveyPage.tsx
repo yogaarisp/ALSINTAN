@@ -21,6 +21,7 @@ import {
   ClipboardList,
   Pencil,
   User,
+  ArrowLeft,
 } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getProspek, createProspek } from '@/lib/api/prospek'
@@ -76,6 +77,33 @@ export default function SurveyPage() {
   const [selectedSurvey, setSelectedSurvey] = useState<DataSurvey | null>(null)
   const [editingSurvey, setEditingSurvey] = useState<DataSurvey | null>(null)
   const [isUpdatingSurvey, setIsUpdatingSurvey] = useState(false)
+
+  // Lock body scroll saat modal detail atau edit terbuka
+  useEffect(() => {
+    const anyOpen = !!selectedSurvey || !!editingSurvey
+    if (anyOpen) {
+      const scrollY = window.scrollY
+      document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.width = '100%'
+    } else {
+      const top = document.body.style.top
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.width = ''
+      if (top) window.scrollTo(0, -parseInt(top))
+    }
+    return () => {
+      const top = document.body.style.top
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.width = ''
+      if (top) window.scrollTo(0, -parseInt(top))
+    }
+  }, [selectedSurvey, editingSurvey])
 
   const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -435,9 +463,9 @@ export default function SurveyPage() {
         </div>
       </div>
 
-      {/* Header */}
+      {/* Page Header */}
       <div className="page-header" style={{ marginBottom: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+        <div className="page-header-row">
           <div>
             <h1 className="page-title">Survey Lapangan & Pencairan</h1>
             <p className="page-subtitle">
@@ -449,82 +477,36 @@ export default function SurveyPage() {
             target="_blank"
             rel="noopener noreferrer"
             className="btn btn-secondary btn-sm"
+            style={{ flexShrink: 0 }}
           >
             <ExternalLink size={14} />
-            Buka Form Eksternal
+            <span className="hide-mobile">Form Eksternal</span>
           </a>
         </div>
       </div>
 
       {/* Tab Switcher */}
-      <div
-        style={{
-          display: 'flex',
-          borderBottom: '1px solid #e2e8f0',
-          gap: 8,
-          overflowX: 'auto',
-          WebkitOverflowScrolling: 'touch',
-        }}
-      >
+      <div className="survey-tabs-nav">
         <button
           onClick={() => setActiveTab('form')}
-          style={{
-            padding: '10px 16px',
-            fontWeight: 600,
-            fontSize: '0.875rem',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            borderBottom: activeTab === 'form' ? '2px solid #16a34a' : '2px solid transparent',
-            color: activeTab === 'form' ? '#16a34a' : '#64748b',
-            whiteSpace: 'nowrap',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-          }}
+          className={`survey-tab-btn ${activeTab === 'form' ? 'active' : ''}`}
         >
-          <ClipboardList size={15} />
-          Isi Form Survey Baru
+          <ClipboardList size={16} />
+          <span>Isi Form Survey</span>
         </button>
         <button
           onClick={() => setActiveTab('history')}
-          style={{
-            padding: '10px 16px',
-            fontWeight: 600,
-            fontSize: '0.875rem',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            borderBottom: activeTab === 'history' ? '2px solid #16a34a' : '2px solid transparent',
-            color: activeTab === 'history' ? '#16a34a' : '#64748b',
-            whiteSpace: 'nowrap',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-          }}
+          className={`survey-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
         >
-          <CheckCircle2 size={15} />
-          Riwayat Survey ({surveyList.length})
+          <CheckCircle2 size={16} />
+          <span>Riwayat ({surveyList.length})</span>
         </button>
         <button
           onClick={() => setActiveTab('rekap')}
-          style={{
-            padding: '10px 16px',
-            fontWeight: 600,
-            fontSize: '0.875rem',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            borderBottom: activeTab === 'rekap' ? '2px solid #16a34a' : '2px solid transparent',
-            color: activeTab === 'rekap' ? '#16a34a' : '#64748b',
-            whiteSpace: 'nowrap',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-          }}
+          className={`survey-tab-btn ${activeTab === 'rekap' ? 'active' : ''}`}
         >
-          <FileSpreadsheet size={15} />
-          Rekap Pencairan ({rekapList.length})
+          <FileSpreadsheet size={16} />
+          <span>Rekap Cair ({rekapList.length})</span>
         </button>
       </div>
 
@@ -557,7 +539,7 @@ export default function SurveyPage() {
               </div>
 
               {/* Grid 2 Cols: Kecamatan & Nama Prospek */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: 16 }}>
                 <div>
                   <label className="input-label">
                     Kecamatan <span style={{ color: '#dc2626' }}>*</span>
@@ -585,13 +567,14 @@ export default function SurveyPage() {
                     placeholder="Contoh: Bpk. Slamet Widodo"
                     className={`input ${errors.namaProspek ? 'error' : ''}`}
                     {...register('namaProspek')}
-                  />
+                  >
+                  </input>
                   {errors.namaProspek && <p className="input-error">{errors.namaProspek.message}</p>}
                 </div>
               </div>
 
               {/* Grid 2 Cols: Kebutuhan Alat & Estimasi Plafon */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: 16 }}>
                 <div>
                   <label className="input-label">
                     Kebutuhan Alat / Alsintan <span style={{ color: '#dc2626' }}>*</span>
@@ -745,7 +728,7 @@ export default function SurveyPage() {
                 <label className="input-label" style={{ marginBottom: 8 }}>
                   Status Progres <span style={{ color: '#dc2626' }}>*</span>
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+                <div className="survey-status-grid">
                   <label
                     style={{
                       display: 'flex',
@@ -848,7 +831,7 @@ export default function SurveyPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="btn btn-primary btn-lg"
+                className="btn btn-primary btn-lg btn-submit-full"
                 style={{
                   width: '100%',
                   maxWidth: 340,
@@ -1008,7 +991,7 @@ export default function SurveyPage() {
                               <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>-</span>
                             )}
                           </td>
-                          <td data-label="Catatan" style={{ fontSize: '0.8125rem', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <td data-label="Catatan" style={{ fontSize: '0.8125rem' }}>
                             {s.catatan || '-'}
                           </td>
                           <td data-label="Progres">
@@ -1050,7 +1033,7 @@ export default function SurveyPage() {
       {activeTab === 'rekap' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Summary Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+          <div className="rekap-kpi-grid">
             <div className="card" style={{ padding: 18, background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
               <div style={{ fontSize: '0.8125rem', color: '#15803d', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <CheckCircle2 size={16} /> Total Alsintan Disburse
@@ -1181,40 +1164,37 @@ export default function SurveyPage() {
       {/* MODAL DETAIL SURVEY */}
       {selectedSurvey && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-          }}
+          className="bottom-sheet-overlay"
           onClick={() => setSelectedSurvey(null)}
         >
           <div
-            className="card animate-slide-up"
-            style={{ width: '100%', maxWidth: 500 }}
+            className="card bottom-sheet-panel animate-slide-from-bottom"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="card-header">
-              <div>
-                <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontFamily: 'monospace' }}>
-                  {selectedSurvey.idSurvey}
-                </span>
-                <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#0f172a' }}>
-                  {selectedSurvey.namaProspek || selectedSurvey.namaGapoktan}
+              <button
+                type="button"
+                onClick={() => setSelectedSurvey(null)}
+                className="btn btn-ghost btn-icon btn-sm bs-header-back-mobile"
+                style={{ color: '#64748b' }}
+              >
+                <ArrowLeft size={20} />
+              </button>
+              <div className="bs-header-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <ClipboardList size={18} color="#16a34a" />
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
+                  Detail Data Survey
                 </h3>
               </div>
-              <button
-                onClick={() => setSelectedSurvey(null)}
-                className="btn btn-ghost btn-icon btn-sm"
-              >
-                ✕
-              </button>
+              <span className="bs-header-spacer" />
             </div>
+
             <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ fontSize: '0.75rem', color: '#64748b', background: '#f8fafc', padding: '8px 10px', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 600, color: '#0f172a' }}>{selectedSurvey.namaProspek || selectedSurvey.namaGapoktan}</span>
+                <span style={{ fontFamily: 'monospace', color: '#94a3b8' }}>{selectedSurvey.idSurvey}</span>
+              </div>
+
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
                 <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>Status Progres</span>
                 <span className={`badge ${getStatusSurveyInfo(selectedSurvey.status).badge}`}>
@@ -1251,7 +1231,7 @@ export default function SurveyPage() {
               <div style={{ padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
                 <span style={{ fontSize: '0.8125rem', color: '#64748b', display: 'block', marginBottom: 4 }}>Koordinat GPS</span>
                 {selectedSurvey.latitude && selectedSurvey.longitude ? (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
                     <span style={{ fontFamily: 'monospace', fontSize: '0.8125rem' }}>
                       {selectedSurvey.latitude.toFixed(6)}, {selectedSurvey.longitude.toFixed(6)}
                       {selectedSurvey.accuracy ? ` (±${selectedSurvey.accuracy}m)` : ''}
@@ -1296,16 +1276,22 @@ export default function SurveyPage() {
                 </div>
               )}
             </div>
-            <div className="card-footer" style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-              <button onClick={() => setSelectedSurvey(null)} className="btn btn-secondary btn-sm">
-                Tutup
-              </button>
+
+            <div className="card-footer" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <button
                 onClick={() => handleOpenEdit(selectedSurvey)}
-                className="btn btn-primary btn-sm"
+                className="btn btn-primary btn-sm btn-submit-full"
+                style={{ justifyContent: 'center' }}
               >
                 <Pencil size={14} />
                 Ubah Data Survey
+              </button>
+              <button
+                onClick={() => setSelectedSurvey(null)}
+                className="btn btn-secondary btn-sm btn-submit-full"
+                style={{ justifyContent: 'center' }}
+              >
+                Tutup
               </button>
             </div>
           </div>
@@ -1315,46 +1301,37 @@ export default function SurveyPage() {
       {/* MODAL UBAH / EDIT DATA SURVEY */}
       {editingSurvey && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-          }}
+          className="bottom-sheet-overlay"
           onClick={() => setEditingSurvey(null)}
         >
           <div
-            className="card animate-slide-up"
-            style={{ width: '100%', maxWidth: 500 }}
+            className="card bottom-sheet-panel animate-slide-from-bottom"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="card-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Pencil size={18} color="#16a34a" />
-                <div>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
-                    Ubah Data Survey
-                  </h3>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontFamily: 'monospace' }}>
-                    {editingSurvey.idSurvey} {getSurveyKecamatan(editingSurvey) ? `· Kec. ${getSurveyKecamatan(editingSurvey)}` : ''}
-                  </span>
-                </div>
-              </div>
               <button
                 type="button"
-                className="btn btn-ghost btn-icon btn-sm"
                 onClick={() => setEditingSurvey(null)}
+                className="btn btn-ghost btn-icon btn-sm bs-header-back-mobile"
+                style={{ color: '#64748b' }}
               >
-                ✕
+                <ArrowLeft size={20} />
               </button>
+              <div className="bs-header-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <Pencil size={18} color="#16a34a" />
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
+                  Ubah Data Survey
+                </h3>
+              </div>
+              <span className="bs-header-spacer" />
             </div>
 
             <form onSubmit={handleSubmitEdit(onSubmitEdit)}>
               <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ fontSize: '0.75rem', color: '#64748b', background: '#f8fafc', padding: '8px 10px', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{editingSurvey.idSurvey}</span>
+                  <span>{getSurveyKecamatan(editingSurvey) ? `Kec. ${getSurveyKecamatan(editingSurvey)}` : ''}</span>
+                </div>
                 
                 {/* Nama Prospek */}
                 <div>
@@ -1453,23 +1430,25 @@ export default function SurveyPage() {
                 </div>
               </div>
 
-              <div className="card-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => setEditingSurvey(null)}
-                >
-                  Batal
-                </button>
+              <div className="card-footer" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <button
                   type="submit"
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-primary btn-sm btn-submit-full"
                   disabled={isUpdatingSurvey}
                   style={{
+                    justifyContent: 'center',
                     background: currentEditStatus === 'DISBURSE' ? '#15803d' : undefined,
                   }}
                 >
                   {isUpdatingSurvey ? 'Menyimpan...' : 'Simpan Perubahan'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm btn-submit-full"
+                  onClick={() => setEditingSurvey(null)}
+                  style={{ justifyContent: 'center' }}
+                >
+                  Batal
                 </button>
               </div>
             </form>
