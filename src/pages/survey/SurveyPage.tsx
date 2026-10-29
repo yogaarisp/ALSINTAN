@@ -854,7 +854,7 @@ export default function SurveyPage() {
 
             </div>
 
-            <div className="card-footer" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <div className="card-footer" style={{ display: 'flex', justifyContent: 'center' }}>
               <button
                 type="submit"
                 disabled={isSubmitting}
