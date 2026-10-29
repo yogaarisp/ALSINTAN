@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
@@ -9,6 +9,8 @@ import {
   UserPlus,
   ArrowRight,
   Sparkles,
+  ArrowLeft,
+
 } from 'lucide-react'
 import { getAnalis, createAnalis, updateAnalisStatus, type CreateAnalisForm } from '@/lib/api/analis'
 import { getProspek } from '@/lib/api/prospek'
@@ -38,6 +40,32 @@ export default function AnalisPage() {
   const queryClient = useQueryClient()
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [selectedWilayahList, setSelectedWilayahList] = useState<string[]>([])
+
+  // Lock body scroll saat modal tambah analis terbuka (iOS/Android mobile fix)
+  useEffect(() => {
+    if (isAddModalOpen) {
+      const scrollY = window.scrollY
+      document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.width = '100%'
+    } else {
+      const top = document.body.style.top
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.width = ''
+      if (top) window.scrollTo(0, -parseInt(top))
+    }
+    return () => {
+      const top = document.body.style.top
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.width = ''
+      if (top) window.scrollTo(0, -parseInt(top))
+    }
+  }, [isAddModalOpen])
 
   const isAdminOrManager = user?.role === 'ADMIN' || user?.role === 'MANAJEMEN'
 
@@ -147,26 +175,29 @@ export default function AnalisPage() {
 
       {/* Admin / Manager Toolbar: Add Analis Button */}
       {isAdminOrManager && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <h1 className="page-title">Manajemen Analis</h1>
-            <p className="page-subtitle">
-              Kelola data master petugas lapangan dan alokasi wilayah kerja kecamatan
-            </p>
+        <div className="page-header" style={{ marginBottom: 0 }}>
+          <div className="page-header-row">
+            <div>
+              <h1 className="page-title">Manajemen Analis</h1>
+              <p className="page-subtitle">
+                Kelola data master petugas lapangan dan alokasi wilayah kerja kecamatan
+              </p>
+            </div>
+            {user?.role === 'ADMIN' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedWilayahList([])
+                  reset()
+                  setIsAddModalOpen(true)
+                }}
+                className="btn btn-primary btn-add-mobile"
+              >
+                <UserPlus size={16} />
+                <span>Tambah Analis Baru</span>
+              </button>
+            )}
           </div>
-          {user?.role === 'ADMIN' && (
-            <button
-              onClick={() => {
-                setSelectedWilayahList([])
-                reset()
-                setIsAddModalOpen(true)
-              }}
-              className="btn btn-primary"
-            >
-              <UserPlus size={16} />
-              Tambah Analis Baru
-            </button>
-          )}
         </div>
       )}
 
@@ -184,10 +215,10 @@ export default function AnalisPage() {
             </div>
           </div>
           <div className="table-responsive">
-            <table className="data-table">
+            <table className="data-table data-table-compact">
               <thead>
                 <tr>
-                  <th>ID Analis</th>
+                  <th style={{ width: 100 }}>ID Analis</th>
                   <th>Nama Petugas</th>
                   <th>Email</th>
                   <th>Wilayah Penugasan</th>
@@ -268,14 +299,16 @@ export default function AnalisPage() {
                       {user?.role === 'ADMIN' && (
                         <td data-label="Aksi" style={{ textAlign: 'right' }}>
                           <button
+                            type="button"
+                            disabled={statusMutation.isPending}
                             onClick={() =>
                               statusMutation.mutate({
                                 id: analis.idAnalis,
                                 status: analis.status === 'AKTIF' ? 'TIDAK_AKTIF' : 'AKTIF',
                               })
                             }
-                            className="btn btn-ghost btn-sm"
-                            style={{ fontSize: '0.75rem' }}
+                            className={`btn btn-sm ${analis.status === 'AKTIF' ? 'btn-secondary' : 'btn-primary'}`}
+                            style={{ fontSize: '0.75rem', padding: '4px 10px' }}
                           >
                             {analis.status === 'AKTIF' ? 'Nonaktifkan' : 'Aktifkan'}
                           </button>
@@ -476,7 +509,7 @@ export default function AnalisPage() {
             </Link>
           </div>
           <div className="table-responsive">
-            <table className="data-table">
+            <table className="data-table data-table-compact">
               <thead>
                 <tr>
                   <th>Nama Prospek</th>
@@ -503,14 +536,14 @@ export default function AnalisPage() {
                     return (
                       <tr key={p.idProspek}>
                         <td data-label="Nama Prospek" style={{ fontWeight: 700, color: '#0f172a' }}>{p.namaProspek || p.namaGapoktan}</td>
-                        <td data-label="Kecamatan">Kec. {p.kecamatan}</td>
+                        <td data-label="Kecamatan" style={{ whiteSpace: 'nowrap' }}>Kec. {p.kecamatan}</td>
                         <td data-label="Komoditas">
                           <span className="badge" style={{ background: '#f0fdf4', color: '#16a34a', borderColor: '#bbf7d0' }}>
                             {p.komoditas}
                           </span>
                         </td>
                         <td data-label="Estimasi Alsintan" style={{ fontSize: '0.8125rem' }}>{p.estimasiKebutuhan || '-'}</td>
-                        <td data-label="Tanggal" style={{ fontSize: '0.8125rem', color: '#64748b' }}>{formatDate(p.tanggal)}</td>
+                        <td data-label="Tanggal" style={{ fontSize: '0.8125rem', color: '#64748b', whiteSpace: 'nowrap' }}>{formatDate(p.tanggal)}</td>
                         <td data-label="Status">
                           <span className={`badge ${statusInfo.badge}`}>
                             {statusInfo.label}
@@ -543,36 +576,30 @@ export default function AnalisPage() {
       {/* Modal Tambah Analis Baru (Admin Only) */}
       {isAddModalOpen && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-          }}
+          className="bottom-sheet-overlay"
           onClick={() => setIsAddModalOpen(false)}
         >
           <div
-            className="card animate-slide-up"
-            style={{ width: '100%', maxWidth: 520 }}
+            className="card bottom-sheet-panel animate-slide-from-bottom"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="card-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(false)}
+                className="btn btn-ghost btn-icon btn-sm bs-header-back-mobile"
+                style={{ color: '#64748b' }}
+                title="Kembali"
+              >
+                <ArrowLeft size={20} />
+              </button>
+              <div className="bs-header-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 <UserPlus size={18} color="#16a34a" />
                 <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
                   Registrasi Analis Baru
                 </h3>
               </div>
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="btn btn-ghost btn-icon btn-sm"
-              >
-                ✕
-              </button>
+              <span className="bs-header-spacer" />
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)}>
@@ -614,7 +641,7 @@ export default function AnalisPage() {
                 <div>
                   <label className="input-label">Alokasi Penugasan Wilayah Kecamatan</label>
                   <div style={{
-                    maxHeight: 150,
+                    maxHeight: 160,
                     overflowY: 'auto',
                     border: '1px solid #e2e8f0',
                     borderRadius: 8,
@@ -653,20 +680,22 @@ export default function AnalisPage() {
                 </div>
               </div>
 
-              <div className="card-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="btn btn-secondary btn-sm"
-                >
-                  Batal
-                </button>
+              <div className="card-footer" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-primary btn-sm btn-submit-full"
+                  style={{ justifyContent: 'center' }}
                 >
                   {createMutation.isPending ? 'Mendaftarkan...' : 'Daftarkan Analis Baru'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="btn btn-secondary btn-sm btn-submit-full"
+                  style={{ justifyContent: 'center' }}
+                >
+                  Batal
                 </button>
               </div>
             </form>
