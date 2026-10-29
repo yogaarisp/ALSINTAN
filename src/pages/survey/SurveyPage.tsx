@@ -155,13 +155,32 @@ export default function SurveyPage() {
     return (s as unknown as { kecamatan?: string }).kecamatan || ''
   }
 
+  // Mendapatkan URL foto survey yang valid (mendukung pergeseran kolom)
+  const getSurveyFotoUrl = (s: DataSurvey | null): string => {
+    if (!s) return ''
+    const candidates = [s.fotoUrl, s.namaKetua, s.catatan]
+    for (const c of candidates) {
+      if (c && typeof c === 'string' && (c.startsWith('http://') || c.startsWith('https://'))) {
+        return c.trim()
+      }
+    }
+    return ''
+  }
+
+  // Ekstraksi File ID Google Drive dari URL
+  const getGoogleDriveFileId = (url: string): string | null => {
+    if (!url) return null
+    const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/)
+    return match ? match[1] : null
+  }
+
   // Sanitasi baris survey jika ada data yang tergeser kolom
   const normalizeSurveyData = (s: DataSurvey): DataSurvey => {
     if (!s) return s
+    const realFoto = getSurveyFotoUrl(s)
     if (s.status && s.status.includes('T') && s.status.includes('Z')) {
       const realTimestamp = s.status
-      const realStatus = (s.fotoUrl || 'SURVEY').toUpperCase() as StatusSurvey
-      const realFoto = s.namaKetua && String(s.namaKetua).startsWith('http') ? String(s.namaKetua) : ''
+      const realStatus = (s.fotoUrl && !s.fotoUrl.startsWith('http') ? s.fotoUrl : 'SURVEY').toUpperCase() as StatusSurvey
       const realHarga = s.latitude && s.latitude > 1000 ? s.latitude : s.estimasiHarga
       const realNamaAnalis = s.timestamp || s.namaAnalis
       const realIdAnalis = s.namaAnalis && String(s.namaAnalis).startsWith('AN') ? s.namaAnalis : s.idAnalis
@@ -180,7 +199,10 @@ export default function SurveyPage() {
         latitude: s.latitude && s.latitude > 1000 ? undefined : s.latitude,
       }
     }
-    return s
+    return {
+      ...s,
+      fotoUrl: realFoto || s.fotoUrl,
+    }
   }
 
   // Data Survey
@@ -1004,9 +1026,9 @@ export default function SurveyPage() {
                             )}
                           </td>
                           <td data-label="Foto">
-                            {s.fotoUrl ? (
+                            {getSurveyFotoUrl(s) ? (
                               <a
-                                href={s.fotoUrl}
+                                href={getSurveyFotoUrl(s)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="badge"
@@ -1198,22 +1220,31 @@ export default function SurveyPage() {
             className="card bottom-sheet-panel animate-slide-from-bottom"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="card-header">
+            <div className="card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <button
                 type="button"
                 onClick={() => setSelectedSurvey(null)}
                 className="btn btn-ghost btn-icon btn-sm bs-header-back-mobile"
                 style={{ color: '#64748b' }}
+                title="Kembali"
               >
                 <ArrowLeft size={20} />
               </button>
-              <div className="bs-header-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <div className="bs-header-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flex: 1 }}>
                 <ClipboardList size={18} color="#16a34a" />
                 <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
                   Detail Data Survey
                 </h3>
               </div>
-              <span className="bs-header-spacer" />
+              <button
+                type="button"
+                onClick={() => setSelectedSurvey(null)}
+                className="btn btn-ghost btn-icon btn-sm"
+                style={{ color: '#64748b' }}
+                title="Tutup"
+              >
+                <X size={18} />
+              </button>
             </div>
 
             <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -1313,23 +1344,45 @@ export default function SurveyPage() {
                 )}
               </div>
 
-              {normalizeSurveyData(selectedSurvey).fotoUrl && (
-                <div>
-                  <label className="input-label">Foto Lapangan</label>
-                  <div style={{ marginTop: 4 }}>
-                    <a
-                      href={normalizeSurveyData(selectedSurvey).fotoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-secondary btn-sm"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                    >
-                      <ExternalLink size={14} />
-                      Buka Foto di Drive
-                    </a>
+              <div>
+                <label className="input-label">Foto Lapangan</label>
+                {getSurveyFotoUrl(selectedSurvey) ? (
+                  <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {getGoogleDriveFileId(getSurveyFotoUrl(selectedSurvey)) && (
+                      <a
+                        href={getSurveyFotoUrl(selectedSurvey)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ display: 'inline-block', maxWidth: 220, borderRadius: 8, overflow: 'hidden', border: '1px solid #e2e8f0' }}
+                        title="Klik untuk membuka foto asli di Google Drive"
+                      >
+                        <img
+                          src={`https://lh3.googleusercontent.com/d/${getGoogleDriveFileId(getSurveyFotoUrl(selectedSurvey))}`}
+                          alt="Foto dokumentasi survey"
+                          style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }}
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none'
+                          }}
+                        />
+                      </a>
+                    )}
+                    <div>
+                      <a
+                        href={getSurveyFotoUrl(selectedSurvey)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-secondary btn-sm"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                      >
+                        <ExternalLink size={14} />
+                        Buka Foto di Drive
+                      </a>
+                    </div>
                   </div>
-                </div>
-              )}
+                ) : (
+                  <input readOnly className="input" value="Tidak ada foto dokumentasi" />
+                )}
+              </div>
 
               {normalizeSurveyData(selectedSurvey).catatan && (
                 <div>
@@ -1345,21 +1398,15 @@ export default function SurveyPage() {
               )}
             </div>
 
-            <div className="card-footer" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="card-footer" style={{ display: 'flex', justifyContent: 'center' }}>
               <button
+                type="button"
                 onClick={() => handleOpenEdit(selectedSurvey)}
                 className="btn btn-primary btn-sm btn-submit-full"
-                style={{ justifyContent: 'center' }}
+                style={{ justifyContent: 'center', width: '100%', maxWidth: 340 }}
               >
                 <Pencil size={14} />
                 Ubah Data Survey
-              </button>
-              <button
-                onClick={() => setSelectedSurvey(null)}
-                className="btn btn-secondary btn-sm btn-submit-full"
-                style={{ justifyContent: 'center' }}
-              >
-                Tutup
               </button>
             </div>
           </div>
@@ -1376,22 +1423,31 @@ export default function SurveyPage() {
             className="card bottom-sheet-panel animate-slide-from-bottom"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="card-header">
+            <div className="card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <button
                 type="button"
                 onClick={() => setEditingSurvey(null)}
                 className="btn btn-ghost btn-icon btn-sm bs-header-back-mobile"
                 style={{ color: '#64748b' }}
+                title="Kembali"
               >
                 <ArrowLeft size={20} />
               </button>
-              <div className="bs-header-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <div className="bs-header-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flex: 1 }}>
                 <Pencil size={18} color="#16a34a" />
                 <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
                   Ubah Data Survey
                 </h3>
               </div>
-              <span className="bs-header-spacer" />
+              <button
+                type="button"
+                onClick={() => setEditingSurvey(null)}
+                className="btn btn-ghost btn-icon btn-sm"
+                style={{ color: '#64748b' }}
+                title="Tutup"
+              >
+                <X size={18} />
+              </button>
             </div>
 
             <form onSubmit={handleSubmitEdit(onSubmitEdit)}>
