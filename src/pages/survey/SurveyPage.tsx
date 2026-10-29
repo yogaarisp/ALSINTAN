@@ -960,20 +960,20 @@ export default function SurveyPage() {
           {/* Survey List Table */}
           <div className="card">
             <div className="table-responsive">
-              <table className="data-table" style={{ minWidth: 1100 }}>
+              <table className="data-table data-table-compact">
                 <thead>
                   <tr>
-                    <th style={{ width: 140 }}>Waktu</th>
-                    <th style={{ minWidth: 150 }}>Nama Prospek</th>
-                    <th style={{ width: 120 }}>Kecamatan</th>
-                    <th style={{ width: 130 }}>Kebutuhan Alat</th>
-                    <th style={{ width: 130 }}>Estimasi Plafon</th>
-                    <th style={{ width: 120 }}>Analis</th>
-                    <th style={{ width: 120 }}>Koordinat GPS</th>
-                    <th style={{ width: 110 }}>Foto</th>
-                    <th style={{ minWidth: 130 }}>Catatan</th>
-                    <th style={{ width: 130 }}>Progres</th>
-                    <th style={{ width: 110, textAlign: 'right' }}>Aksi</th>
+                    <th>Waktu</th>
+                    <th>Nama Prospek</th>
+                    <th>Kecamatan</th>
+                    <th>Kebutuhan Alat</th>
+                    <th>Estimasi Plafon</th>
+                    <th>Analis</th>
+                    <th style={{ textAlign: 'center' }}>GPS</th>
+                    <th style={{ textAlign: 'center' }}>Foto</th>
+                    <th>Catatan</th>
+                    <th>Progres</th>
+                    <th style={{ textAlign: 'right' }}>Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -997,8 +997,13 @@ export default function SurveyPage() {
                       const kec = getSurveyKecamatan(s)
                       return (
                         <tr key={s.idSurvey}>
-                          <td data-label="Waktu" style={{ fontSize: '0.8125rem', color: '#64748b', whiteSpace: 'nowrap' }}>
-                            {formatDateTime(s.timestamp)}
+                          <td data-label="Waktu">
+                            <div style={{ fontSize: '0.8125rem', color: '#0f172a', whiteSpace: 'nowrap' }}>
+                              {formatDate(s.timestamp)}
+                            </div>
+                            <div style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>
+                              {new Date(s.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace(':', '.')}
+                            </div>
                           </td>
                           <td data-label="Nama Prospek" style={{ fontWeight: 700, color: '#0f172a' }}>
                             {s.namaProspek || s.namaGapoktan}
@@ -1011,60 +1016,66 @@ export default function SurveyPage() {
                             {s.estimasiHarga ? formatRupiah(s.estimasiHarga) : '-'}
                           </td>
                           <td data-label="Analis" style={{ fontSize: '0.8125rem', whiteSpace: 'nowrap' }}>{s.namaAnalis || '-'}</td>
-                          <td data-label="Koordinat GPS" style={{ whiteSpace: 'nowrap' }}>
+                          <td data-label="GPS" style={{ textAlign: 'center' }}>
                             {s.latitude ? (
                               <a
                                 href={`https://www.google.com/maps?q=${s.latitude},${s.longitude}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                style={{ color: '#16a34a', textDecoration: 'underline', fontSize: '0.75rem', fontFamily: 'monospace' }}
+                                className="badge"
+                                style={{ background: '#f8fafc', color: '#16a34a', borderColor: '#bbf7d0', fontSize: '0.6875rem', padding: '2px 6px', display: 'inline-flex', alignItems: 'center', gap: 3 }}
+                                title={`GPS: ${s.latitude.toFixed(6)}, ${s.longitude?.toFixed(6)}`}
                               >
-                                {s.latitude.toFixed(4)}, {s.longitude?.toFixed(4)}
+                                <MapPin size={11} />
+                                GPS
                               </a>
                             ) : (
-                              '-'
+                              <span style={{ color: '#cbd5e1' }}>-</span>
                             )}
                           </td>
-                          <td data-label="Foto">
+                          <td data-label="Foto" style={{ textAlign: 'center' }}>
                             {getSurveyFotoUrl(s) ? (
                               <a
                                 href={getSurveyFotoUrl(s)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="badge"
-                                style={{ background: '#ecfdf5', color: '#047857', borderColor: '#a7f3d0', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                                style={{ background: '#ecfdf5', color: '#047857', borderColor: '#a7f3d0', fontSize: '0.6875rem', padding: '2px 6px', display: 'inline-flex', alignItems: 'center', gap: 3 }}
+                                title="Buka foto dokumentasi"
                               >
-                                <Camera size={12} />
-                                Lihat Foto
+                                <Camera size={11} />
+                                Foto
                               </a>
                             ) : (
-                              <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>-</span>
+                              <span style={{ color: '#cbd5e1' }}>-</span>
                             )}
                           </td>
-                          <td data-label="Catatan" style={{ fontSize: '0.8125rem' }}>
+                          <td data-label="Catatan" style={{ fontSize: '0.75rem', color: '#64748b', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={s.catatan || ''}>
                             {s.catatan || '-'}
                           </td>
                           <td data-label="Progres">
-                            <span className={`badge ${statusInfo.badge}`} style={{ whiteSpace: 'nowrap' }}>
+                            <span className={`badge ${statusInfo.badge}`} style={{ fontSize: '0.6875rem', padding: '2px 8px' }}>
                               {statusInfo.label}
                             </span>
                           </td>
                           <td data-label="Aksi" style={{ textAlign: 'right' }}>
-                            <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
+                            <div style={{ display: 'inline-flex', gap: 4, alignItems: 'center', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
                               <button
                                 type="button"
                                 onClick={() => setSelectedSurvey(s)}
                                 className="btn btn-secondary btn-sm"
+                                style={{ padding: '4px 8px', fontSize: '0.75rem' }}
                               >
                                 Detail
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleOpenEdit(s)}
-                                className="btn btn-secondary btn-sm"
+                                className="btn btn-secondary btn-sm btn-icon"
+                                style={{ padding: '4px 6px' }}
                                 title="Ubah data survey"
                               >
-                                <Pencil size={14} />
+                                <Pencil size={13} />
                               </button>
                             </div>
                           </td>
@@ -1142,18 +1153,18 @@ export default function SurveyPage() {
           {/* Rekap Pencairan Table */}
           <div className="card">
             <div className="table-responsive">
-              <table className="data-table" style={{ minWidth: 1000 }}>
+              <table className="data-table data-table-compact">
                 <thead>
                   <tr>
-                    <th style={{ width: 110 }}>ID Cair</th>
-                    <th style={{ width: 110 }}>Tanggal</th>
-                    <th style={{ minWidth: 150 }}>Nama Prospek</th>
-                    <th style={{ width: 120 }}>Kecamatan</th>
-                    <th style={{ width: 130 }}>Jenis Alsintan</th>
-                    <th style={{ width: 140 }}>Plafon Pencairan</th>
-                    <th style={{ width: 120 }}>Analis</th>
-                    <th style={{ minWidth: 130 }}>Catatan</th>
-                    <th style={{ width: 140 }}>Status</th>
+                    <th>ID Cair</th>
+                    <th>Tanggal</th>
+                    <th>Nama Prospek</th>
+                    <th>Kecamatan</th>
+                    <th>Jenis Alsintan</th>
+                    <th>Plafon Pencairan</th>
+                    <th>Analis</th>
+                    <th>Catatan</th>
+                    <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>

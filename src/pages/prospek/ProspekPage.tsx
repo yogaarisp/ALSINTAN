@@ -421,7 +421,7 @@ export default function ProspekPage() {
       {/* Prospek List Table */}
       <div className="card">
         <div className="table-responsive">
-          <table className="data-table" style={{ minWidth: 1000 }}>
+          <table className="data-table data-table-compact">
             <thead>
               <tr>
                 <th>ID</th>
