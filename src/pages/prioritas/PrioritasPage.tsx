@@ -430,14 +430,6 @@ export default function PrioritasPage() {
               >
                 Lihat Prospek di Wilayah Ini
               </Link>
-              <button
-                type="button"
-                onClick={() => setSelectedResult(null)}
-                className="btn btn-secondary btn-sm btn-submit-full"
-                style={{ justifyContent: 'center' }}
-              >
-                Tutup
-              </button>
             </div>
           </div>
         </div>
