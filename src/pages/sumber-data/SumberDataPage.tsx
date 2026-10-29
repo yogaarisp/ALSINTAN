@@ -124,11 +124,11 @@ export default function SumberDataPage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {/* Dev Banner */}
-      <div className="dev-banner">
-        <Database size={16} style={{ flexShrink: 0, marginTop: 2 }} />
-        <div>
+      <div className="dev-banner" style={{ padding: '8px 12px' }}>
+        <Database size={15} style={{ flexShrink: 0, marginTop: 2 }} />
+        <div style={{ fontSize: '0.775rem', lineHeight: 1.4 }}>
           <strong>Sumber Data Live:</strong> Semua spreadsheet sumber di folder ALSINTAN
           dibaca langsung (live) dari Google Sheets — setiap edit karyawan langsung
           tampil di sini.
@@ -139,18 +139,17 @@ export default function SumberDataPage() {
       <div className="page-header" style={{ marginBottom: 0 }}>
         <div className="sumber-header-wrap">
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <h1 className="page-title" style={{ margin: 0 }}>Sumber Data</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <h1 className="page-title" style={{ margin: 0, fontSize: '1.25rem' }}>Sumber Data</h1>
               {(isFetchingSources || isFetching) && (
                 <span className="sumber-sync-pill">
                   <span className="sumber-sync-dot" />
-                  Menyinkronkan spreadsheet...
+                  Menyinkronkan...
                 </span>
               )}
             </div>
-            <p className="page-subtitle" style={{ marginTop: 4 }}>
-              Telusuri data mentah dari semua spreadsheet sumber (Poktan, Produksi,
-              Rekap) tanpa perlu buka Google Sheets.
+            <p className="page-subtitle" style={{ marginTop: 2, fontSize: '0.8rem', color: '#64748b' }}>
+              Telusuri data mentah dari spreadsheet sumber tanpa perlu buka Google Sheets.
             </p>
           </div>
 
@@ -161,67 +160,28 @@ export default function SumberDataPage() {
                 href={activeSource.url}
                 target="_blank"
                 rel="noreferrer"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}
               >
-                <ExternalLink size={14} />
+                <ExternalLink size={13} />
                 <span>Buka Spreadsheet</span>
               </a>
             )}
             <a
-              className="btn btn-ghost btn-sm"
+              className="btn btn-secondary btn-sm"
               href="https://drive.google.com/drive/folders/1SSz9RlEF4AGuspbiRfy55xsxS3xQS_Dy"
               target="_blank"
               rel="noreferrer"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}
               title="Buka folder ALSINTAN di Google Drive"
             >
-              <FolderOpen size={14} />
+              <FolderOpen size={13} />
               <span>Folder Drive</span>
             </a>
           </div>
         </div>
       </div>
 
-      {/* Mobile Source Selector Dropdown (Quick switch on mobile) */}
-      <div className="hide-desktop" style={{ width: '100%' }}>
-        <label
-          className="input-label"
-          style={{
-            marginBottom: 6,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            fontSize: '0.75rem',
-            fontWeight: 700,
-            color: '#334155',
-          }}
-        >
-          <Database size={14} color="#16a34a" />
-          <span>PILIH SUMBER SPREADSHEET</span>
-        </label>
-        <select
-          className="input"
-          value={activeSource?.key || ''}
-          onChange={(e) => {
-            setActiveKey(e.target.value)
-            setTab('')
-            setSearchText('')
-            setQ('')
-            setPage(1)
-          }}
-          style={{ width: '100%', fontWeight: 600, padding: '10px 12px' }}
-        >
-          {sources.map((s) => (
-            <option key={s.key} value={s.key}>
-              {s.nama} ({s.kategori} · {s.tabs.length} tab)
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Main Layout: Sidebar Sources + Content */}
+      {/* Main Layout: Sidebar Sources (Desktop) + Content Table */}
       <div className="sumber-data-layout">
-        {/* Pilihan sumber (Desktop: vertical list, Mobile: swipeable chips) */}
+        {/* Pilihan sumber (Desktop: vertical list of cards; Hidden on mobile) */}
         <div className="sumber-sidebar">
           {sources.length === 0 &&
             Array.from({ length: 4 }).map((_, i) => (
@@ -273,11 +233,38 @@ export default function SumberDataPage() {
         <div className="card sumber-content">
           {/* Card Header Toolbar */}
           <div className="card-header sumber-toolbar">
-            {/* Left: Tab selection & Reload */}
-            <div className="sumber-toolbar-left">
-              <div className="sumber-tab-field">
+            {/* Mobile Only: Row 1 - Dropdown Sumber Spreadsheet */}
+            <div className="sumber-toolbar-row sumber-mobile-only">
+              <div className="sumber-input-group">
+                <span className="sumber-input-prefix">
+                  <FileSpreadsheet size={15} color="#16a34a" />
+                </span>
                 <select
-                  className="input"
+                  className="input input-sm sumber-select-main"
+                  value={activeSource?.key || ''}
+                  onChange={(e) => {
+                    setActiveKey(e.target.value)
+                    setTab('')
+                    setSearchText('')
+                    setQ('')
+                    setPage(1)
+                  }}
+                >
+                  {sources.map((s) => (
+                    <option key={s.key} value={s.key}>
+                      {s.nama} ({s.tabs.length} tab)
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Desktop Toolbar Row (Inline on desktop) */}
+            <div className="sumber-toolbar-desktop-row">
+              {/* Tab selector */}
+              <div className="sumber-tab-field-desktop" style={{ flex: '1 1 auto', minWidth: 160 }}>
+                <select
+                  className="input input-sm"
                   style={{ width: '100%', fontWeight: 500 }}
                   value={activeTabName}
                   onChange={(e) => setTab(e.target.value)}
@@ -290,22 +277,110 @@ export default function SumberDataPage() {
                   ))}
                 </select>
               </div>
+
+              {/* Reload button */}
               <button
                 type="button"
-                className="btn btn-ghost btn-icon btn-sm"
+                className="btn btn-secondary btn-sm btn-icon"
                 title="Muat ulang data"
                 onClick={() => setPage((p) => p)}
                 disabled={isFetching}
+                style={{ height: 32, width: 32, flexShrink: 0 }}
+              >
+                <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
+              </button>
+
+              {/* Search box */}
+              <div className="sumber-search-box sumber-search-box-desktop">
+                <Search size={14} className="sumber-search-icon" />
+                <input
+                  className="input input-sm"
+                  placeholder="Cari data..."
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+                {searchText && (
+                  <button
+                    type="button"
+                    className="sumber-search-clear"
+                    onClick={() => {
+                      setSearchText('')
+                      setQ('')
+                      setPage(1)
+                    }}
+                    title="Hapus pencarian"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={handleSearch}
+                style={{ flexShrink: 0 }}
+              >
+                Cari
+              </button>
+
+              {/* View Mode Segmented Control on Desktop */}
+              <div className="sumber-segmented sumber-seg-desktop">
+                <button
+                  type="button"
+                  className={`sumber-seg-btn ${viewMode === 'table' ? 'active' : ''}`}
+                  onClick={() => setViewMode('table')}
+                  title="Tampilan Tabel Spreadsheet"
+                >
+                  <Table2 size={13} />
+                  <span>Tabel</span>
+                </button>
+                <button
+                  type="button"
+                  className={`sumber-seg-btn ${viewMode === 'card' ? 'active' : ''}`}
+                  onClick={() => setViewMode('card')}
+                  title="Tampilan Kartu"
+                >
+                  <LayoutGrid size={13} />
+                  <span>Kartu</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Mobile Only: Row 2 (Tab Selection + Reload) */}
+            <div className="sumber-toolbar-row sumber-mobile-only">
+              <select
+                className="input input-sm"
+                style={{ flex: 1, minWidth: 0, fontWeight: 500 }}
+                value={activeTabName}
+                onChange={(e) => setTab(e.target.value)}
+                disabled={!activeSource}
+              >
+                {activeSource?.tabs.map((t) => (
+                  <option key={t.nama} value={t.nama}>
+                    Tab: {t.nama} ({t.baris - 1 > 0 ? t.baris - 1 : 0} baris)
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm btn-icon"
+                title="Muat ulang data"
+                onClick={() => setPage((p) => p)}
+                disabled={isFetching}
+                style={{ height: 32, width: 32, flexShrink: 0 }}
               >
                 <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
               </button>
             </div>
 
-            {/* Center: Search Box */}
-            <div className="sumber-toolbar-center">
+            {/* Mobile Only: Row 3 (Search box + Cari button) */}
+            <div className="sumber-toolbar-row sumber-mobile-only">
               <div className="sumber-search-box">
+                <Search size={14} className="sumber-search-icon" />
                 <input
-                  className="input"
+                  className="input input-sm"
                   placeholder="Cari di semua kolom..."
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
@@ -332,31 +407,33 @@ export default function SumberDataPage() {
                 onClick={handleSearch}
                 style={{ flexShrink: 0 }}
               >
-                <Search size={14} style={{ marginRight: 4 }} />
-                <span>Cari</span>
+                Cari
               </button>
             </div>
 
-            {/* Right: View Mode Toggle (Tabel / Kartu) */}
-            <div className="sumber-view-toggle">
-              <button
-                type="button"
-                className={`btn btn-sm ${viewMode === 'table' ? 'btn-primary' : 'btn-ghost'}`}
-                onClick={() => setViewMode('table')}
-                title="Tampilan Tabel Spreadsheet"
-              >
-                <Table2 size={14} />
-                <span>Tabel</span>
-              </button>
-              <button
-                type="button"
-                className={`btn btn-sm ${viewMode === 'card' ? 'btn-primary' : 'btn-ghost'}`}
-                onClick={() => setViewMode('card')}
-                title="Tampilan Kartu"
-              >
-                <LayoutGrid size={14} />
-                <span>Kartu</span>
-              </button>
+            {/* Mobile Only: Row 4 (Info Counter + View Mode Toggle) */}
+            <div className="sumber-toolbar-row sumber-toolbar-between sumber-mobile-only">
+              <div className="sumber-count-badge">
+                <strong>{data?.total ?? 0}</strong> baris {q ? `("${q}")` : ''}
+              </div>
+              <div className="sumber-segmented">
+                <button
+                  type="button"
+                  className={`sumber-seg-btn ${viewMode === 'table' ? 'active' : ''}`}
+                  onClick={() => setViewMode('table')}
+                >
+                  <Table2 size={13} />
+                  <span>Tabel</span>
+                </button>
+                <button
+                  type="button"
+                  className={`sumber-seg-btn ${viewMode === 'card' ? 'active' : ''}`}
+                  onClick={() => setViewMode('card')}
+                >
+                  <LayoutGrid size={13} />
+                  <span>Kartu</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -370,7 +447,7 @@ export default function SumberDataPage() {
               </div>
             ) : isLoading || !data ? (
               <div style={{ padding: 20 }}>
-                <div className="skeleton" style={{ height: 320, width: '100%', borderRadius: 8 }} />
+                <div className="skeleton" style={{ height: 260, width: '100%', borderRadius: 8 }} />
               </div>
             ) : data.header.length === 0 ? (
               <div style={{ padding: 24, textAlign: 'center' }}>
@@ -386,7 +463,7 @@ export default function SumberDataPage() {
                     <div className="sumber-scroll-hint hide-desktop">
                       <SlidersHorizontal size={13} color="#16a34a" />
                       <span>
-                        Geser tabel ke kanan untuk melihat seluruh <strong>{data.header.length}</strong> kolom (klik sel untuk detail)
+                        Geser tabel untuk melihat seluruh <strong>{data.header.length}</strong> kolom (klik sel untuk detail)
                       </span>
                     </div>
 
@@ -424,7 +501,7 @@ export default function SumberDataPage() {
                                     key={ci}
                                     title={formatted}
                                     onClick={() => {
-                                      if (formatted.length > 20) {
+                                      if (formatted.length > 15) {
                                         setSelectedCell({
                                           header: data.header[ci] || `Kolom ${ci + 1}`,
                                           value: formatted,
