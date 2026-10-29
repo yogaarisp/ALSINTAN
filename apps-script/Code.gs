@@ -230,7 +230,13 @@ function nextId(sheetName, idColumn, prefix) {
 function appendRow(sheetName, headers, obj) {
   var sheet = getSheet(sheetName);
   if (!sheet) throw new Error('Sheet tidak ditemukan: ' + sheetName);
-  var row = headers.map(function (h) {
+  var lastCol = sheet.getLastColumn();
+  var actualHeaders = lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function (h) {
+    var key = str(h).toUpperCase();
+    return HEADER_ALIAS[key] || key;
+  }) : [];
+  var targetHeaders = (actualHeaders && actualHeaders.length > 0) ? actualHeaders : headers;
+  var row = targetHeaders.map(function (h) {
     var v = obj[h];
     if (v === undefined || v === null) return '';
     if (typeof v === 'string' && /^[=+\-@]/.test(v)) v = "'" + v;
@@ -784,7 +790,6 @@ function apiCreateSurvey(p) {
     'ID_SURVEY': idSurvey,
     'ID_PROSPEK': prosp.idProspek,
     'NAMA_PROSPEK': nama,
-    'NAMA_KETUA': str(p.namaKetua),
     'JUMLAH_ANGGOTA': num(p.jumlahAnggota),
     'LUAS_SAWAH_AKTUAL': num(p.luasSawah),
     'JENIS_ALSINTAN': jenisAls,
@@ -798,6 +803,7 @@ function apiCreateSurvey(p) {
     'TIMESTAMP': str(p.timestamp) || new Date().toISOString(),
     'STATUS': statusSurvey,
     'FOTO_URL': fotoUrl,
+    'NAMA_KETUA': str(p.namaKetua),
   };
   appendRow(SHEETS.SURVEY, Object.keys(obj), obj);
 

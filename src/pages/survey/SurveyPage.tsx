@@ -20,7 +20,6 @@ import {
   Building,
   ClipboardList,
   Pencil,
-  User,
   ArrowLeft,
 } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -156,12 +155,40 @@ export default function SurveyPage() {
     return (s as unknown as { kecamatan?: string }).kecamatan || ''
   }
 
+  // Sanitasi baris survey jika ada data yang tergeser kolom
+  const normalizeSurveyData = (s: DataSurvey): DataSurvey => {
+    if (!s) return s
+    if (s.status && s.status.includes('T') && s.status.includes('Z')) {
+      const realTimestamp = s.status
+      const realStatus = (s.fotoUrl || 'SURVEY').toUpperCase() as StatusSurvey
+      const realFoto = s.namaKetua && String(s.namaKetua).startsWith('http') ? String(s.namaKetua) : ''
+      const realHarga = s.latitude && s.latitude > 1000 ? s.latitude : s.estimasiHarga
+      const realNamaAnalis = s.timestamp || s.namaAnalis
+      const realIdAnalis = s.namaAnalis && String(s.namaAnalis).startsWith('AN') ? s.namaAnalis : s.idAnalis
+      const realCatatan = s.idAnalis && !String(s.idAnalis).startsWith('AN') ? s.idAnalis : s.catatan
+
+      return {
+        ...s,
+        timestamp: realTimestamp,
+        status: realStatus,
+        fotoUrl: realFoto,
+        estimasiHarga: realHarga,
+        estimasiPlafon: realHarga,
+        namaAnalis: realNamaAnalis,
+        idAnalis: realIdAnalis,
+        catatan: realCatatan,
+        latitude: s.latitude && s.latitude > 1000 ? undefined : s.latitude,
+      }
+    }
+    return s
+  }
+
   // Data Survey
   const { data: surveyData, isLoading: loadingSurvey } = useQuery({
     queryKey: ['survey'],
     queryFn: () => getSurvey({ limit: 100 }),
   })
-  const surveyList = surveyData?.items ?? []
+  const surveyList = useMemo(() => (surveyData?.items ?? []).map(normalizeSurveyData), [surveyData])
 
   // Data Rekap Pencairan
   const { data: rekapData, isLoading: loadingRekap } = useQuery({
@@ -1190,89 +1217,130 @@ export default function SurveyPage() {
             </div>
 
             <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ fontSize: '0.75rem', color: '#64748b', background: '#f8fafc', padding: '8px 10px', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 600, color: '#0f172a' }}>{selectedSurvey.namaProspek || selectedSurvey.namaGapoktan}</span>
-                <span style={{ fontFamily: 'monospace', color: '#94a3b8' }}>{selectedSurvey.idSurvey}</span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>Status Progres</span>
-                <span className={`badge ${getStatusSurveyInfo(selectedSurvey.status).badge}`}>
-                  {getStatusSurveyInfo(selectedSurvey.status).label}
+              <div style={{ fontSize: '0.75rem', color: '#64748b', background: '#f8fafc', padding: '8px 10px', borderRadius: 8 }}>
+                {normalizeSurveyData(selectedSurvey).namaProspek || normalizeSurveyData(selectedSurvey).namaGapoktan}
+                <span style={{ fontFamily: 'monospace', color: '#94a3b8', marginLeft: 8 }}>
+                  {normalizeSurveyData(selectedSurvey).idSurvey}
                 </span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>Waktu Survey</span>
-                <span style={{ fontSize: '0.875rem', color: '#0f172a' }}>{formatDateTime(selectedSurvey.timestamp)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>Wilayah Kecamatan</span>
-                <strong style={{ color: '#0f172a' }}>Kec. {getSurveyKecamatan(selectedSurvey) || '-'}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>Kebutuhan Alsintan</span>
-                <strong>{selectedSurvey.jenisAlsintan || '-'}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>Estimasi Plafon</span>
-                <strong style={{ color: '#16a34a' }}>
-                  {selectedSurvey.estimasiHarga ? formatRupiah(selectedSurvey.estimasiHarga) : '-'}
-                </strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>Analis Petugas</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <User size={14} color="#64748b" />
-                  <strong>{selectedSurvey.namaAnalis || '-'}</strong>
+
+              <div>
+                <label className="input-label">Status Progres</label>
+                <div style={{ marginTop: 6 }}>
+                  <span className={`badge ${getStatusSurveyInfo(normalizeSurveyData(selectedSurvey).status).badge}`}>
+                    {getStatusSurveyInfo(normalizeSurveyData(selectedSurvey).status).label}
+                  </span>
                 </div>
               </div>
 
-              {/* Titik Koordinat GPS */}
-              <div style={{ padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '0.8125rem', color: '#64748b', display: 'block', marginBottom: 4 }}>Koordinat GPS</span>
-                {selectedSurvey.latitude && selectedSurvey.longitude ? (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-                    <span style={{ fontFamily: 'monospace', fontSize: '0.8125rem' }}>
-                      {selectedSurvey.latitude.toFixed(6)}, {selectedSurvey.longitude.toFixed(6)}
-                      {selectedSurvey.accuracy ? ` (±${selectedSurvey.accuracy}m)` : ''}
-                    </span>
+              <div>
+                <label className="input-label">Wilayah Kecamatan</label>
+                <input
+                  readOnly
+                  className="input"
+                  value={getSurveyKecamatan(normalizeSurveyData(selectedSurvey)) ? `Kec. ${getSurveyKecamatan(normalizeSurveyData(selectedSurvey))}` : '-'}
+                />
+              </div>
+
+              <div>
+                <label className="input-label">Nama Prospek (Perorangan)</label>
+                <input
+                  readOnly
+                  className="input"
+                  value={normalizeSurveyData(selectedSurvey).namaProspek || normalizeSurveyData(selectedSurvey).namaGapoktan || '-'}
+                />
+              </div>
+
+              <div>
+                <label className="input-label">Kebutuhan Alat / Alsintan</label>
+                <input
+                  readOnly
+                  className="input"
+                  value={normalizeSurveyData(selectedSurvey).jenisAlsintan || '-'}
+                />
+              </div>
+
+              <div>
+                <label className="input-label">Estimasi Plafon (Rp)</label>
+                <input
+                  readOnly
+                  className="input"
+                  value={normalizeSurveyData(selectedSurvey).estimasiHarga ? formatRupiah(normalizeSurveyData(selectedSurvey).estimasiHarga!) : '-'}
+                />
+              </div>
+
+              <div>
+                <label className="input-label">Analis Penanggung Jawab</label>
+                <input
+                  readOnly
+                  className="input"
+                  value={normalizeSurveyData(selectedSurvey).namaAnalis || normalizeSurveyData(selectedSurvey).idAnalis || '-'}
+                />
+              </div>
+
+              <div>
+                <label className="input-label">Waktu Survey</label>
+                <input
+                  readOnly
+                  className="input"
+                  value={formatDateTime(normalizeSurveyData(selectedSurvey).timestamp)}
+                />
+              </div>
+
+              <div>
+                <label className="input-label">Koordinat GPS</label>
+                {normalizeSurveyData(selectedSurvey).latitude && normalizeSurveyData(selectedSurvey).longitude ? (
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input
+                      readOnly
+                      className="input"
+                      style={{ flex: 1, fontFamily: 'monospace' }}
+                      value={`${normalizeSurveyData(selectedSurvey).latitude!.toFixed(6)}, ${normalizeSurveyData(selectedSurvey).longitude!.toFixed(6)}${normalizeSurveyData(selectedSurvey).accuracy ? ` (±${normalizeSurveyData(selectedSurvey).accuracy}m)` : ''}`}
+                    />
                     <a
-                      href={`https://www.google.com/maps?q=${selectedSurvey.latitude},${selectedSurvey.longitude}`}
+                      href={`https://www.google.com/maps?q=${normalizeSurveyData(selectedSurvey).latitude},${normalizeSurveyData(selectedSurvey).longitude}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn btn-secondary btn-sm"
+                      style={{ flexShrink: 0, height: 42, display: 'inline-flex', alignItems: 'center', gap: 4 }}
                     >
-                      <Navigation size={13} />
-                      Buka Peta
+                      <Navigation size={14} />
+                      Peta
                     </a>
                   </div>
                 ) : (
-                  <span style={{ fontSize: '0.8125rem', color: '#94a3b8' }}>Tidak ada titik koordinat GPS</span>
+                  <input readOnly className="input" value="Tidak ada titik koordinat GPS" />
                 )}
               </div>
 
-              {/* Foto Lapangan */}
-              {selectedSurvey.fotoUrl && (
-                <div style={{ padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                  <span style={{ fontSize: '0.8125rem', color: '#64748b', display: 'block', marginBottom: 6 }}>Foto Lapangan</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {normalizeSurveyData(selectedSurvey).fotoUrl && (
+                <div>
+                  <label className="input-label">Foto Lapangan</label>
+                  <div style={{ marginTop: 4 }}>
                     <a
-                      href={selectedSurvey.fotoUrl}
+                      href={normalizeSurveyData(selectedSurvey).fotoUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn btn-secondary btn-sm"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     >
-                      <ExternalLink size={13} />
+                      <ExternalLink size={14} />
                       Buka Foto di Drive
                     </a>
                   </div>
                 </div>
               )}
 
-              {/* Catatan Lapangan */}
-              {selectedSurvey.catatan && (
-                <div style={{ padding: 10, background: '#f8fafc', borderRadius: 8, fontSize: '0.8125rem', color: '#475569' }}>
-                  <strong>Catatan Verifikasi:</strong> {selectedSurvey.catatan}
+              {normalizeSurveyData(selectedSurvey).catatan && (
+                <div>
+                  <label className="input-label">Catatan Lapangan</label>
+                  <textarea
+                    readOnly
+                    className="input"
+                    rows={3}
+                    style={{ resize: 'none' }}
+                    value={normalizeSurveyData(selectedSurvey).catatan}
+                  />
                 </div>
               )}
             </div>
