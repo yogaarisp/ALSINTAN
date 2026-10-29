@@ -231,16 +231,105 @@ export default function SumberDataPage() {
 
         {/* Tabel Data & Controls */}
         <div className="card sumber-content">
-          {/* Card Header Toolbar */}
-          <div className="card-header sumber-toolbar">
-            {/* Mobile Only: Row 1 - Dropdown Sumber Spreadsheet */}
-            <div className="sumber-toolbar-row sumber-mobile-only">
-              <div className="sumber-input-group">
-                <span className="sumber-input-prefix">
+          {/* 1. DESKTOP TOOLBAR (Displayed on screens >= 901px) */}
+          <div className="sumber-desktop-toolbar">
+            {/* Tab dropdown */}
+            <div className="sumber-desktop-tab">
+              <select
+                className="input input-sm"
+                style={{ width: '100%', fontWeight: 500 }}
+                value={activeTabName}
+                onChange={(e) => setTab(e.target.value)}
+                disabled={!activeSource}
+              >
+                {activeSource?.tabs.map((t) => (
+                  <option key={t.nama} value={t.nama}>
+                    Tab: {t.nama} ({t.baris - 1 > 0 ? t.baris - 1 : 0} baris)
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Refresh button */}
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm btn-icon"
+              title="Muat ulang data"
+              onClick={() => setPage((p) => p)}
+              disabled={isFetching}
+              style={{ height: 36, width: 36, flexShrink: 0 }}
+            >
+              <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
+            </button>
+
+            {/* Search box */}
+            <div className="sumber-desktop-search">
+              <Search size={14} className="sumber-search-icon-left" />
+              <input
+                className="input input-sm"
+                placeholder="Cari data..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              />
+              {searchText && (
+                <button
+                  type="button"
+                  className="sumber-search-clear"
+                  onClick={() => {
+                    setSearchText('')
+                    setQ('')
+                    setPage(1)
+                  }}
+                  title="Hapus pencarian"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={handleSearch}
+              style={{ height: 36, padding: '0 16px', flexShrink: 0 }}
+            >
+              Cari
+            </button>
+
+            {/* Segmented view mode on Desktop */}
+            <div className="sumber-segmented" style={{ marginLeft: 'auto' }}>
+              <button
+                type="button"
+                className={`sumber-seg-btn ${viewMode === 'table' ? 'active' : ''}`}
+                onClick={() => setViewMode('table')}
+                title="Tampilan Tabel Spreadsheet"
+              >
+                <Table2 size={13} />
+                <span>Tabel</span>
+              </button>
+              <button
+                type="button"
+                className={`sumber-seg-btn ${viewMode === 'card' ? 'active' : ''}`}
+                onClick={() => setViewMode('card')}
+                title="Tampilan Kartu"
+              >
+                <LayoutGrid size={13} />
+                <span>Kartu</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 2. MOBILE TOOLBAR (Displayed on screens <= 900px) */}
+          <div className="sumber-mobile-toolbar">
+            {/* Mobile Row 1: Source Spreadsheet */}
+            <div className="sumber-mobile-row">
+              <div className="sumber-mobile-input-group">
+                <span className="sumber-mobile-input-icon">
                   <FileSpreadsheet size={15} color="#16a34a" />
                 </span>
                 <select
-                  className="input input-sm sumber-select-main"
+                  className="input input-sm sumber-mobile-select"
                   value={activeSource?.key || ''}
                   onChange={(e) => {
                     setActiveKey(e.target.value)
@@ -259,100 +348,11 @@ export default function SumberDataPage() {
               </div>
             </div>
 
-            {/* Desktop Toolbar Row (Inline on desktop) */}
-            <div className="sumber-toolbar-desktop-row">
-              {/* Tab selector */}
-              <div className="sumber-tab-field-desktop" style={{ flex: '1 1 auto', minWidth: 160 }}>
-                <select
-                  className="input input-sm"
-                  style={{ width: '100%', fontWeight: 500 }}
-                  value={activeTabName}
-                  onChange={(e) => setTab(e.target.value)}
-                  disabled={!activeSource}
-                >
-                  {activeSource?.tabs.map((t) => (
-                    <option key={t.nama} value={t.nama}>
-                      Tab: {t.nama} ({t.baris - 1 > 0 ? t.baris - 1 : 0} baris)
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Reload button */}
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm btn-icon"
-                title="Muat ulang data"
-                onClick={() => setPage((p) => p)}
-                disabled={isFetching}
-                style={{ height: 32, width: 32, flexShrink: 0 }}
-              >
-                <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
-              </button>
-
-              {/* Search box */}
-              <div className="sumber-search-box sumber-search-box-desktop">
-                <Search size={14} className="sumber-search-icon" />
-                <input
-                  className="input input-sm"
-                  placeholder="Cari data..."
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                />
-                {searchText && (
-                  <button
-                    type="button"
-                    className="sumber-search-clear"
-                    onClick={() => {
-                      setSearchText('')
-                      setQ('')
-                      setPage(1)
-                    }}
-                    title="Hapus pencarian"
-                  >
-                    <X size={14} />
-                  </button>
-                )}
-              </div>
-
-              <button
-                type="button"
-                className="btn btn-primary btn-sm"
-                onClick={handleSearch}
-                style={{ flexShrink: 0 }}
-              >
-                Cari
-              </button>
-
-              {/* View Mode Segmented Control on Desktop */}
-              <div className="sumber-segmented sumber-seg-desktop">
-                <button
-                  type="button"
-                  className={`sumber-seg-btn ${viewMode === 'table' ? 'active' : ''}`}
-                  onClick={() => setViewMode('table')}
-                  title="Tampilan Tabel Spreadsheet"
-                >
-                  <Table2 size={13} />
-                  <span>Tabel</span>
-                </button>
-                <button
-                  type="button"
-                  className={`sumber-seg-btn ${viewMode === 'card' ? 'active' : ''}`}
-                  onClick={() => setViewMode('card')}
-                  title="Tampilan Kartu"
-                >
-                  <LayoutGrid size={13} />
-                  <span>Kartu</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Mobile Only: Row 2 (Tab Selection + Reload) */}
-            <div className="sumber-toolbar-row sumber-mobile-only">
+            {/* Mobile Row 2: Tab Selector + Reload button */}
+            <div className="sumber-mobile-row">
               <select
                 className="input input-sm"
-                style={{ flex: 1, minWidth: 0, fontWeight: 500 }}
+                style={{ flex: 1, minWidth: 0, height: 38, fontWeight: 500 }}
                 value={activeTabName}
                 onChange={(e) => setTab(e.target.value)}
                 disabled={!activeSource}
@@ -365,20 +365,19 @@ export default function SumberDataPage() {
               </select>
               <button
                 type="button"
-                className="btn btn-secondary btn-sm btn-icon"
+                className="btn btn-secondary btn-sm sumber-btn-refresh"
                 title="Muat ulang data"
                 onClick={() => setPage((p) => p)}
                 disabled={isFetching}
-                style={{ height: 32, width: 32, flexShrink: 0 }}
               >
                 <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
               </button>
             </div>
 
-            {/* Mobile Only: Row 3 (Search box + Cari button) */}
-            <div className="sumber-toolbar-row sumber-mobile-only">
-              <div className="sumber-search-box">
-                <Search size={14} className="sumber-search-icon" />
+            {/* Mobile Row 3: Search input + Cari button */}
+            <div className="sumber-mobile-row">
+              <div className="sumber-mobile-search-input">
+                <Search size={14} className="sumber-search-icon-left" />
                 <input
                   className="input input-sm"
                   placeholder="Cari di semua kolom..."
@@ -403,16 +402,15 @@ export default function SumberDataPage() {
               </div>
               <button
                 type="button"
-                className="btn btn-primary btn-sm"
+                className="btn btn-primary btn-sm sumber-btn-search"
                 onClick={handleSearch}
-                style={{ flexShrink: 0 }}
               >
                 Cari
               </button>
             </div>
 
-            {/* Mobile Only: Row 4 (Info Counter + View Mode Toggle) */}
-            <div className="sumber-toolbar-row sumber-toolbar-between sumber-mobile-only">
+            {/* Mobile Row 4: Total counter (left) + Segmented View Mode (right) */}
+            <div className="sumber-mobile-row" style={{ justifyContent: 'space-between', paddingTop: 2 }}>
               <div className="sumber-count-badge">
                 <strong>{data?.total ?? 0}</strong> baris {q ? `("${q}")` : ''}
               </div>
@@ -531,24 +529,31 @@ export default function SumberDataPage() {
                   </>
                 )}
 
-                {/* Mode 2: CARD MODE (Optimized for mobile reading) */}
+                {/* Mode 2: CARD MODE (Optimized Clean Spec Format) */}
                 {viewMode === 'card' && (
                   <div className="sumber-cards-list">
                     {data.rows.map((row, ri) => {
                       const rowNum = (data.page - 1) * data.limit + ri + 1
-                      // Find best primary title (first non-empty text that is not just a row number)
-                      const titleCandidate = row.find(
+
+                      // Find primary title column (e.g. Nama Poktan, index 1 or first text)
+                      const titleIdx = row.findIndex(
                         (c, idx) => idx > 0 && typeof c === 'string' && c.trim().length > 0
                       )
-                      const rowTitle = titleCandidate ? String(titleCandidate) : `Baris #${rowNum}`
+                      const rowTitle = titleIdx > -1 ? String(row[titleIdx]) : `Baris #${rowNum}`
 
-                      // Get non-empty entries for concise card view
+                      // Get key entries excluding rowNum and duplicate title
                       const validEntries = row
                         .map((cell, ci) => ({
+                          ci,
                           header: data.header[ci] || `Kolom ${ci + 1}`,
                           value: fmtCell(cell),
                         }))
-                        .filter((entry) => entry.value !== '')
+                        .filter(
+                          (entry) =>
+                            entry.value !== '' &&
+                            entry.ci !== 0 && // skip first column if it's just 'No'
+                            entry.ci !== titleIdx // skip duplicate title
+                        )
 
                       return (
                         <div key={ri} className="sumber-row-card">
@@ -567,31 +572,22 @@ export default function SumberDataPage() {
                             </button>
                           </div>
 
-                          <div className="sumber-card-fields">
-                            {validEntries.slice(0, 6).map((entry, ei) => (
-                              <div key={ei} className="sumber-field-item">
-                                <span className="sumber-field-label">{entry.header}</span>
-                                <span className="sumber-field-value">{entry.value}</span>
+                          <div className="sumber-card-specs">
+                            {validEntries.slice(0, 5).map((entry, ei) => (
+                              <div key={ei} className="sumber-card-spec-row">
+                                <span className="sumber-spec-label">{entry.header}</span>
+                                <span className="sumber-spec-value">{entry.value}</span>
                               </div>
                             ))}
                           </div>
 
-                          {validEntries.length > 6 && (
+                          {validEntries.length > 5 && (
                             <button
                               type="button"
                               onClick={() => setSelectedRow(row)}
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                padding: '4px 0',
-                                color: '#16a34a',
-                                fontSize: '0.75rem',
-                                fontWeight: 600,
-                                textAlign: 'left',
-                                cursor: 'pointer',
-                              }}
+                              className="sumber-card-more-btn"
                             >
-                              + Lihat {validEntries.length - 6} kolom lainnya...
+                              + Lihat {validEntries.length - 5} kolom lainnya...
                             </button>
                           )}
                         </div>

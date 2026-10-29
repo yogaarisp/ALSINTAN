@@ -712,8 +712,8 @@ body {
 }
 
 .sumber-sidebar {
-  flex: 0 0 280px;
-  width: 280px;
+  flex: 0 0 270px;
+  width: 270px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -751,67 +751,41 @@ body {
   overflow: hidden;
 }
 
-/* Toolbar */
-.sumber-toolbar {
+/* Toolbar Desktop */
+.sumber-desktop-toolbar {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px 14px;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
   background: white;
   border-bottom: 1px solid var(--color-neutral-200);
+  flex-wrap: wrap;
 }
 
-.sumber-toolbar-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
+.sumber-desktop-tab {
+  width: 220px;
 }
 
-.sumber-toolbar-between {
-  justify-content: space-between;
-}
-
-.sumber-input-group {
-  display: flex;
-  align-items: center;
-  position: relative;
-  width: 100%;
-}
-
-.sumber-input-prefix {
-  position: absolute;
-  left: 10px;
-  display: flex;
-  align-items: center;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.sumber-select-main {
-  padding-left: 32px !important;
-  font-weight: 600;
-  width: 100%;
-}
-
-.sumber-search-box {
-  position: relative;
+.sumber-desktop-search {
   flex: 1;
+  min-width: 180px;
+  position: relative;
   display: flex;
   align-items: center;
 }
 
-.sumber-search-icon {
+.sumber-desktop-search input {
+  padding-left: 32px !important;
+  padding-right: 28px !important;
+  width: 100%;
+  height: 36px;
+}
+
+.sumber-search-icon-left {
   position: absolute;
   left: 10px;
   color: #94a3b8;
   pointer-events: none;
-}
-
-.sumber-search-box input {
-  padding-left: 32px !important;
-  padding-right: 28px !important;
-  width: 100%;
 }
 
 .sumber-search-clear {
@@ -833,21 +807,96 @@ body {
   color: #475569;
 }
 
+/* Toolbar Mobile */
+.sumber-mobile-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: white;
+  border-bottom: 1px solid var(--color-neutral-200);
+}
+
+.sumber-mobile-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.sumber-mobile-input-group {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+
+.sumber-mobile-input-icon {
+  position: absolute;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.sumber-mobile-select {
+  padding-left: 32px !important;
+  font-weight: 600;
+  width: 100%;
+  height: 38px;
+}
+
+.sumber-mobile-search-input {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.sumber-mobile-search-input input {
+  padding-left: 32px !important;
+  padding-right: 28px !important;
+  width: 100%;
+  height: 38px;
+}
+
+.sumber-btn-refresh {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+}
+
+.sumber-btn-search {
+  height: 38px;
+  padding: 0 16px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
 /* Modern Segmented Control */
 .sumber-segmented {
   display: inline-flex;
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
-  padding: 3px;
+  padding: 2px;
   border-radius: 8px;
-  gap: 3px;
+  gap: 2px;
 }
 
 .sumber-seg-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   padding: 5px 12px;
   font-size: 0.75rem;
   font-weight: 600;
@@ -868,14 +917,12 @@ body {
 
 .sumber-count-badge {
   font-size: 0.75rem;
-  color: #64748b;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.sumber-mobile-only {
-  display: none !important;
+  font-weight: 600;
+  color: #059669;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 3px 8px;
+  border-radius: 6px;
 }
 
 /* Scroll Hint on Mobile */
@@ -952,7 +999,7 @@ body {
 .sumber-cards-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   padding: 12px;
   background: #f8fafc;
 }
@@ -960,24 +1007,25 @@ body {
 .sumber-row-card {
   background: white;
   border: 1px solid var(--color-neutral-200);
-  border-radius: 10px;
-  padding: 12px 14px;
-  box-shadow: var(--shadow-sm);
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  transition: border-color 0.15s ease;
+  gap: 10px;
+  transition: all 0.15s ease;
 }
 
 .sumber-row-card:hover {
   border-color: #86efac;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.06);
 }
 
 .sumber-row-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--color-neutral-100);
 }
@@ -990,10 +1038,11 @@ body {
   padding: 2px 7px;
   border-radius: 6px;
   border: 1px solid #a7f3d0;
+  flex-shrink: 0;
 }
 
 .sumber-row-title {
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   color: #0f172a;
   flex: 1;
@@ -1002,30 +1051,56 @@ body {
   white-space: nowrap;
 }
 
-.sumber-card-fields {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 8px 14px;
-}
-
-.sumber-field-item {
+.sumber-card-specs {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.sumber-field-label {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+.sumber-card-spec-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px dashed #f1f5f9;
+  gap: 12px;
+  font-size: 0.8125rem;
 }
 
-.sumber-field-value {
-  font-size: 0.8125rem;
-  color: #1e293b;
+.sumber-card-spec-row:last-child {
+  border-bottom: none;
+}
+
+.sumber-spec-label {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.sumber-spec-value {
+  color: #0f172a;
+  font-weight: 600;
+  text-align: right;
   word-break: break-word;
+}
+
+.sumber-card-more-btn {
+  background: none;
+  border: none;
+  padding: 6px 0 2px;
+  color: #16a34a;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sumber-card-more-btn:hover {
+  text-decoration: underline;
 }
 
 /* Pagination */
@@ -1060,41 +1135,19 @@ body {
   align-items: center;
 }
 
-/* Desktop layout rules for toolbar */
+/* Responsive Visibility */
 @media (min-width: 901px) {
-  .sumber-toolbar {
-    flex-direction: row;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-  .sumber-toolbar-row {
-    width: auto;
-  }
-  .sumber-tab-field-desktop {
-    width: 220px;
-  }
-  .sumber-search-box-desktop {
-    width: 260px;
-  }
-  .sumber-seg-desktop {
-    margin-left: auto;
+  .sumber-mobile-toolbar {
+    display: none !important;
   }
 }
 
-/* Mobile & Tablet Breakpoints */
 @media (max-width: 900px) {
   .sumber-sidebar {
     display: none !important;
   }
-
-  .sumber-mobile-only {
-    display: flex !important;
-  }
-
-  .sumber-toolbar {
-    padding: 10px 12px;
-    gap: 8px;
+  .sumber-desktop-toolbar {
+    display: none !important;
   }
 }
 
@@ -1139,11 +1192,6 @@ body {
   .sumber-pagination-actions .btn {
     width: 100%;
     justify-content: center;
-  }
-
-  .sumber-card-fields {
-    grid-template-columns: 1fr;
-    gap: 8px;
   }
 }
 
