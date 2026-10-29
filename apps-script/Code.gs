@@ -748,9 +748,21 @@ function apiCreateSurvey(p) {
     var namaProsp = str(p.namaProspek) || str(p.namaGapoktan);
     if (!namaProsp) throw new Error('Nama prospek wajib diisi');
     var statusAwal = str(p.status).toUpperCase() === 'DISBURSE' ? 'DISBURSE' : (str(p.status).toUpperCase() === 'ANALISA' ? 'POTENSIAL' : 'SURVEY');
+    var idKec = str(p.idKecamatan);
+    if (!idKec && str(p.kecamatan)) {
+      var wilList = apiGetWilayah({});
+      wilList.forEach(function (w) {
+        if (str(w.kecamatan).toLowerCase() === str(p.kecamatan).toLowerCase()) {
+          idKec = w.idKecamatan;
+        }
+      });
+    }
+    if (!idKec) idKec = 'W006';
     prosp = apiCreateProspek({
+      idKecamatan: idKec,
       kecamatan: str(p.kecamatan),
       namaProspek: namaProsp,
+      namaGapoktan: namaProsp,
       estimasiKebutuhan: str(p.jenisAlsintan) || str(p.kebutuhanAlat),
       estimasiPlafon: num(p.estimasiHarga) || num(p.estimasiPlafon) || 0,
       idAnalis: str(p.idAnalis),

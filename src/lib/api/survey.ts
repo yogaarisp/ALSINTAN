@@ -25,6 +25,7 @@ export async function getSurveyById(idSurvey: string): Promise<DataSurvey | null
 // Payload survey — foto dikirim sebagai base64 (disimpan ke Drive oleh Apps Script)
 export interface CreateSurveyPayload {
   idProspek?: string
+  idKecamatan?: string
   kecamatan?: string
   namaProspek?: string
   namaGapoktan?: string
@@ -48,6 +49,7 @@ export interface CreateSurveyPayload {
 export async function createSurvey(form: CreateSurveyPayload): Promise<DataSurvey> {
   return gasPost<DataSurvey>('createSurvey', {
     ...form,
+    idKecamatan: form.idKecamatan,
     namaGapoktan: form.namaGapoktan || form.namaProspek,
     namaProspek: form.namaProspek || form.namaGapoktan,
   })

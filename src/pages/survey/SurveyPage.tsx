@@ -23,7 +23,7 @@ import {
   User,
 } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { getProspek } from '@/lib/api/prospek'
+import { getProspek, createProspek } from '@/lib/api/prospek'
 import { getWilayah } from '@/lib/api/wilayah'
 import { createSurvey, getSurvey, updateSurvey, getRekapPencairan } from '@/lib/api/survey'
 import { useAuth } from '@/lib/auth/auth-context'
@@ -190,20 +190,23 @@ export default function SurveyPage() {
 
   // Auto-populate form when selecting an existing prospect
   const handleSelectExistingProspek = (id: string) => {
-    setValue('idProspek', id)
+    setValue('idProspek', id, { shouldValidate: true, shouldDirty: true })
     if (!id) {
-      setValue('namaProspek', '')
-      setValue('kecamatan', '')
-      setValue('jenisAlsintan', '')
-      setValue('estimasiHarga', 0)
+      setValue('namaProspek', '', { shouldValidate: true, shouldDirty: true })
+      setValue('kecamatan', '', { shouldValidate: true, shouldDirty: true })
+      setValue('jenisAlsintan', '', { shouldValidate: true, shouldDirty: true })
+      setValue('estimasiHarga', 0, { shouldValidate: true, shouldDirty: true })
       return
     }
     const found = (prospekData?.items ?? []).find((p) => p.idProspek === id)
     if (found) {
-      setValue('namaProspek', found.namaProspek || found.namaGapoktan || '')
-      setValue('kecamatan', found.kecamatan || '')
-      setValue('jenisAlsintan', found.estimasiKebutuhan || '')
-      setValue('estimasiHarga', found.estimasiPlafon || 0)
+      const matchedWil = (wilayahData ?? []).find(
+        (w) => w.kecamatan.toUpperCase() === (found.kecamatan || '').toUpperCase() || w.idKecamatan === found.idKecamatan
+      )
+      setValue('namaProspek', found.namaProspek || found.namaGapoktan || '', { shouldValidate: true, shouldDirty: true })
+      setValue('kecamatan', matchedWil ? matchedWil.kecamatan : (found.kecamatan || ''), { shouldValidate: true, shouldDirty: true })
+      setValue('jenisAlsintan', found.estimasiKebutuhan || '', { shouldValidate: true, shouldDirty: true })
+      setValue('estimasiHarga', found.estimasiPlafon || 0, { shouldValidate: true, shouldDirty: true })
       toast.success(`Data prospek ${found.namaProspek || found.namaGapoktan} terisi otomatis`)
     }
   }
@@ -213,13 +216,16 @@ export default function SurveyPage() {
     if (!initialProspekId || !prospekData?.items) return
     const found = prospekData.items.find((p) => p.idProspek === initialProspekId)
     if (found) {
-      setValue('idProspek', found.idProspek)
-      setValue('namaProspek', found.namaProspek || found.namaGapoktan || '')
-      setValue('kecamatan', found.kecamatan || '')
-      setValue('jenisAlsintan', found.estimasiKebutuhan || '')
-      setValue('estimasiHarga', found.estimasiPlafon || 0)
+      const matchedWil = (wilayahData ?? []).find(
+        (w) => w.kecamatan.toUpperCase() === (found.kecamatan || '').toUpperCase() || w.idKecamatan === found.idKecamatan
+      )
+      setValue('idProspek', found.idProspek, { shouldValidate: true, shouldDirty: true })
+      setValue('namaProspek', found.namaProspek || found.namaGapoktan || '', { shouldValidate: true, shouldDirty: true })
+      setValue('kecamatan', matchedWil ? matchedWil.kecamatan : (found.kecamatan || ''), { shouldValidate: true, shouldDirty: true })
+      setValue('jenisAlsintan', found.estimasiKebutuhan || '', { shouldValidate: true, shouldDirty: true })
+      setValue('estimasiHarga', found.estimasiPlafon || 0, { shouldValidate: true, shouldDirty: true })
     }
-  }, [initialProspekId, prospekData, setValue])
+  }, [initialProspekId, prospekData, wilayahData, setValue])
 
   // Geolocation Handler
   const handleGetGPS = () => {
@@ -250,8 +256,35 @@ export default function SurveyPage() {
   const onSubmit = async (data: SurveyFormData) => {
     const isAnalis = user?.role === 'ANALIS'
     try {
+      let targetIdProspek = data.idProspek
+
+      // Cari data wilayah yang cocok
+      const wil = (wilayahData ?? []).find(
+        (w) =>
+          w.kecamatan.toLowerCase() === (data.kecamatan || '').toLowerCase() ||
+          w.idKecamatan.toLowerCase() === (data.kecamatan || '').toLowerCase()
+      )
+      const idKec = wil?.idKecamatan || 'W006'
+
+      // Jika prospek belum ada (input manual), buat prospek terlebih dahulu
+      // agar terdata di DATA_PROSPEK dan ID_PROSPEK valid untuk DATA_SURVEY
+      if (!targetIdProspek) {
+        const newProsp = await createProspek({
+          idKecamatan: idKec,
+          namaProspek: data.namaProspek,
+          namaGapoktan: data.namaProspek,
+          komoditas: 'Padi',
+          estimasiKebutuhan: data.jenisAlsintan,
+          estimasiPlafon: data.estimasiHarga || 0,
+          idAnalis: isAnalis ? user!.id : 'AN001',
+          namaAnalis: isAnalis ? user!.nama : 'Budi Santoso',
+        })
+        targetIdProspek = newProsp.idProspek
+      }
+
       await createSurvey({
-        idProspek: data.idProspek || undefined,
+        idProspek: targetIdProspek,
+        idKecamatan: idKec,
         kecamatan: data.kecamatan,
         namaProspek: data.namaProspek,
         namaGapoktan: data.namaProspek,
