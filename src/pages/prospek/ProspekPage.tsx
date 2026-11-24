@@ -12,7 +12,6 @@ import {
   ClipboardList,
   Building,
   User,
-  Sparkles,
   Pencil,
   Trash2,
   RotateCcw,
@@ -332,15 +331,7 @@ export default function ProspekPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* Dev only banner */}
-      <div className="dev-banner">
-        <Sparkles size={16} />
-        <div>
-          <strong>Pipeline Prospek Fase 1:</strong> Terintegrasi ke Google Spreadsheet. Prospek baru dapat dibuat dan di-assign ke Analis untuk tindak lanjut survey lapangan.
-        </div>
-      </div>
-
-      {/* Page Header */}
+      
       <div className="page-header" style={{ marginBottom: 0 }}>
         <div className="page-header-row">
           <div>

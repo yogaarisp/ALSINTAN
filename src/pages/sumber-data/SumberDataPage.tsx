@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import {
-  Database,
   ExternalLink,
   FolderOpen,
   Search,
@@ -125,17 +124,7 @@ export default function SumberDataPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      {/* Dev Banner */}
-      <div className="dev-banner" style={{ padding: '8px 12px' }}>
-        <Database size={15} style={{ flexShrink: 0, marginTop: 2 }} />
-        <div style={{ fontSize: '0.775rem', lineHeight: 1.4 }}>
-          <strong>Sumber Data Live:</strong> Semua spreadsheet sumber di folder ALSINTAN
-          dibaca langsung (live) dari Google Sheets — setiap edit karyawan langsung
-          tampil di sini.
-        </div>
-      </div>
-
-      {/* Page Header */}
+      
       <div className="page-header" style={{ marginBottom: 0 }}>
         <div className="sumber-header-wrap">
           <div>

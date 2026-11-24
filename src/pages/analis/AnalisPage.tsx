@@ -8,7 +8,6 @@ import toast from 'react-hot-toast'
 import {
   UserPlus,
   ArrowRight,
-  Sparkles,
   ArrowLeft,
 
 } from 'lucide-react'
@@ -165,15 +164,7 @@ export default function AnalisPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* Dev only banner */}
-      <div className="dev-banner">
-        <Sparkles size={16} />
-        <div>
-          <strong>Manajemen & Portal Analis:</strong> Admin dapat meregistrasikan Analis baru dan memetakan wilayah penugasan kecamatan ke Google Spreadsheet (Sheet: `MASTER_ANALIS`).
-        </div>
-      </div>
-
-      {/* Admin / Manager Toolbar: Add Analis Button */}
+      
       {isAdminOrManager && (
         <div className="page-header" style={{ marginBottom: 0 }}>
           <div className="page-header-row">

@@ -12,7 +12,6 @@ import {
   Search,
   Layers,
   ChevronRight,
-  Sparkles,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { getWilayah } from '@/lib/api/wilayah'
@@ -133,15 +132,7 @@ export default function PetaPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Dev only note */}
-      <div className="dev-banner">
-        <Sparkles size={16} />
-        <div>
-          <strong>Peta Potensi Fase 1:</strong> Visualisasi marker interaktif per kecamatan dengan skor prioritas. Data dapat difilter berdasarkan level prioritas dan komoditas.
-        </div>
-      </div>
-
-      {/* Header & Filter Bar */}
+      
       <div className="card" style={{ padding: 14 }}>
         <div className="filter-bar-responsive" style={{ justifyContent: 'space-between' }}>
           {/* Search */}

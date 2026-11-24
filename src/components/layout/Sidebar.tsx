@@ -111,7 +111,7 @@ export function Sidebar({ isOpen = true, onClose, isCollapsed = false, onToggleC
                   {APP_CONFIG.name}
                 </div>
                 <div style={{ fontSize: '0.7rem', color: '#64748b', lineHeight: 1.2 }}>
-                  Fase 1 · {APP_CONFIG.version}
+                  v{APP_CONFIG.version}
                 </div>
               </div>
             )}

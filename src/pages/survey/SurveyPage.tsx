@@ -10,7 +10,6 @@ import {
   Navigation,
   CheckCircle2,
   ExternalLink,
-  Sparkles,
   Search,
   DollarSign,
   AlertCircle,
@@ -504,15 +503,7 @@ export default function SurveyPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* Dev / System Banner */}
-      <div className="dev-banner">
-        <Sparkles size={16} />
-        <div>
-          <strong>Survey & Pencairan Alsintan:</strong> Verifikasi perorangan, koordinat GPS, foto lapangan, dan pencatatan otomatis ke <strong>REKAP PENCAIRAN</strong> saat status diset ke <strong>DISBURSE</strong>.
-        </div>
-      </div>
-
-      {/* Page Header */}
+      
       <div className="page-header" style={{ marginBottom: 0 }}>
         <div className="page-header-row">
           <div>

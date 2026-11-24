@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
@@ -11,8 +10,6 @@ import {
   UserCheck,
   AlertCircle,
   Clock,
-  Sparkles,
-  X,
   Trophy,
   Medal,
   ChevronRight,
@@ -34,6 +31,7 @@ import {
 import { getDashboardKPI } from '@/lib/api/dashboard'
 import { getWilayah } from '@/lib/api/wilayah'
 import { getProspek } from '@/lib/api/prospek'
+import { isGasConfigured } from '@/lib/api/gas'
 import { rankWilayah } from '@/lib/services/priority-engine'
 import {
   formatHektar,
@@ -50,8 +48,6 @@ import type { DashboardKPI, MasterWilayah } from '@/lib/types'
 const PIE_COLORS = ['#16a34a', '#0284c7', '#8b5cf6', '#f59e0b', '#ef4444']
 
 export default function DashboardPage() {
-  const [bannerDismissed, setBannerDismissed] = useState(false)
-
   const {
     data: kpi,
     isFetching: fetchingKpi,
@@ -59,7 +55,12 @@ export default function DashboardPage() {
   } = useQuery({
     queryKey: ['dashboard', 'kpi'],
     queryFn: getDashboardKPI,
-    initialData: () => getLocalCache<DashboardKPI>('dashboard_kpi') ?? MOCK_DASHBOARD_KPI,
+    initialData: () => {
+      const cached = getLocalCache<DashboardKPI>('dashboard_kpi')
+      if (cached) return cached
+      if (!isGasConfigured()) return MOCK_DASHBOARD_KPI
+      return undefined
+    },
     initialDataUpdatedAt: 0,
   })
 
@@ -69,7 +70,12 @@ export default function DashboardPage() {
   } = useQuery({
     queryKey: ['wilayah'],
     queryFn: () => getWilayah(),
-    initialData: () => getLocalCache<MasterWilayah[]>('wilayah_all') ?? MOCK_WILAYAH,
+    initialData: () => {
+      const cached = getLocalCache<MasterWilayah[]>('wilayah_all')
+      if (cached) return cached
+      if (!isGasConfigured()) return MOCK_WILAYAH
+      return undefined
+    },
     initialDataUpdatedAt: 0,
   })
 
@@ -129,65 +135,7 @@ export default function DashboardPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* Dev preview alert banner (Dismissible) */}
-      {!bannerDismissed && (
-        <div
-          style={{
-            background: 'linear-gradient(135deg, rgba(254, 243, 199, 0.7) 0%, rgba(254, 240, 138, 0.4) 100%)',
-            border: '1px solid rgba(245, 158, 11, 0.3)',
-            borderRadius: 12,
-            padding: '10px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 12,
-            boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03)',
-            animation: 'fadeIn 0.2s ease',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 8,
-                background: '#fef3c7',
-                border: '1px solid #fde68a',
-                color: '#b45309',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <Sparkles size={15} />
-            </div>
-            <div style={{ fontSize: '0.8125rem', color: '#92400e', lineHeight: 1.4 }}>
-              <strong>Fase 1 Development Preview:</strong> Data terhubung dengan simulasi Google Spreadsheet & Priority Engine. Bobot skor simulasi <em>[DEVELOPMENT ONLY]</em>.
-            </div>
-          </div>
-          <button
-            onClick={() => setBannerDismissed(true)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#92400e',
-              cursor: 'pointer',
-              padding: 4,
-              borderRadius: 6,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              opacity: 0.7,
-            }}
-            aria-label="Tutup pemberitahuan"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      )}
-
-      {/* Hero Page Header */}
+      
       <div className="dashboard-hero">
         <div style={{ maxWidth: 680 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
@@ -457,7 +405,7 @@ export default function DashboardPage() {
           <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Analis</span>
             <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#be185d', background: '#fdf2f8', padding: '1px 6px', borderRadius: 4 }}>
-              Aktif Budi Santoso
+              {kpi?.analisAktif ? `${kpi.analisAktif} Personel Aktif` : 'Siap Ditugaskan'}
             </span>
           </div>
         </div>

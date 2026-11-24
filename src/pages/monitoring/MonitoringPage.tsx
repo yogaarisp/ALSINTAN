@@ -12,7 +12,6 @@ import {
   Activity,
   ExternalLink,
   Target,
-  Sparkles,
   Award,
   Banknote,
   CheckCircle2,
@@ -91,15 +90,7 @@ export default function MonitoringPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* Dev only banner */}
-      <div className="dev-banner">
-        <Sparkles size={16} />
-        <div>
-          <strong>Dashboard Monitoring & Evaluasi Manajemen (Fase 1):</strong> Membandingkan data potensi awal wilayah (Dinas Pertanian) dengan realisasi prospek/survey aktual lapangan oleh Analis.
-        </div>
-      </div>
-
-      {/* Page Header with Looker Studio Bridge */}
+      
       <div className="page-header" style={{ marginBottom: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div>

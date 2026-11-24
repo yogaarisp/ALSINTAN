@@ -6,7 +6,6 @@ import {
   Filter,
   ArrowUpDown,
   MapPin,
-  Sparkles,
   Info,
   Sliders,
   ArrowLeft,
@@ -137,15 +136,7 @@ export default function PrioritasPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* Formula info banner */}
-      <div className="dev-banner">
-        <Sparkles size={16} />
-        <div>
-          <strong>Priority Analysis Engine:</strong> Formula pembobotan aktif (Luas Lahan {Math.round(currentConfig.weights.luasLahan * 100)}%, Gapoktan {Math.round(currentConfig.weights.jumlahGapoktan * 100)}%, Produksi {Math.round(currentConfig.weights.produksi * 100)}%, Pipeline Prospek {Math.round(currentConfig.weights.prospekExisting * 100)}%). Ranking dihitung otomatis dari data wilayah & prospek.
-        </div>
-      </div>
-
-      {/* Page Header */}
+      
       <div className="page-header" style={{ marginBottom: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div>
@@ -153,6 +144,13 @@ export default function PrioritasPage() {
             <p className="page-subtitle">
               Urutan wilayah kecamatan yang paling direkomendasikan untuk penetrasi prospek alsintan
             </p>
+            <div style={{ marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', color: '#64748b' }}>
+              <span style={{ fontWeight: 600, color: '#334155' }}>Bobot Formula:</span>
+              <span>Lahan {Math.round(currentConfig.weights.luasLahan * 100)}%</span>·
+              <span>Gapoktan {Math.round(currentConfig.weights.jumlahGapoktan * 100)}%</span>·
+              <span>Produksi {Math.round(currentConfig.weights.produksi * 100)}%</span>·
+              <span>Pipeline {Math.round(currentConfig.weights.prospekExisting * 100)}%</span>
+            </div>
           </div>
           <Link to="/peta" className="btn btn-secondary">
             <MapPin size={16} />
